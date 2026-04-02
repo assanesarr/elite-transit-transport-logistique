@@ -127,7 +127,7 @@ export default function ShowRecu(
                             </ItemActions>
                         </Item>
                         <p className="hidden text-center text-xs print:text-muted-foreground mt-4 print:block ">
-                            Reçu généré par Darou Khafor Transit. Merci de votre confiance!
+                            Reçu généré par Elite Transit Transport Logistique. Merci de votre confiance!
                         </p>
                     </DialogDescription>
                 </DialogHeader>

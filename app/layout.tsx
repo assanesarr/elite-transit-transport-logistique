@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Darou Khafor Transit",
-  description: "Darou Khafor Transit",
+  title: "Elite Transit Transport Logistique",
+  description: "Elite Transit Transport Logistique est une entreprise de transport et de logistique spécialisée dans le transport de marchandises en Afrique de l'Ouest. Nous offrons des services de transport de qualité supérieure, fiables et abordables pour répondre aux besoins de nos clients.",
   manifest: "/manifest.json",
   // themeColor: "#000000",
 };

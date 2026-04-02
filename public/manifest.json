@@ -1,7 +1,7 @@
 {
-  "name": "Darou Khafor Transit",
+  "name": "Elite Transit Transport Logistique",
   "short_name": "NextPWA",
-  "description": "My Next.js Progressive Web App",
+  "description": "Elite Transit Transport Logistique est une entreprise de transport et de logistique spécialisée dans le transport de marchandises en Afrique de l'Ouest. Nous offrons des services de transport de qualité supérieure, fiables et abordables pour répondre aux besoins de nos clients.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
