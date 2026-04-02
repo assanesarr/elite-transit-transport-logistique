@@ -1,0 +1,44 @@
+mutation CreateFeedForUser($userId: UUID!, $name: String!, $url: String!, $description: String) @auth(level: USER) {
+  feed_insert(data: {
+    userId: $userId,
+    name: $name,
+    url: $url,
+    createdAt_expr: "request.time",
+    updatedAt_expr: "request.time",
+    description: $description
+  })
+}
+
+query ListFeedsForUser($userId: UUID!) @auth(level: USER) {
+  feeds(where: {userId: {eq: $userId}}) {
+    id
+    name
+    url
+    description
+    createdAt
+    updatedAt
+  }
+}
+
+mutation MarkArticleAsRead($userId: UUID!, $articleId: UUID!) @auth(level: USER) {
+  readArticle_upsert(data: {
+    userId: $userId,
+    articleId: $articleId,
+    isRead: true,
+    readAt_expr: "request.time"
+  })
+}
+
+query ListFavoriteArticlesForUser($userId: UUID!) @auth(level: USER) {
+  favoriteArticles(where: {userId: {eq: $userId}, isFavorite: {eq: true}}) {
+    article {
+      id
+      title
+      url
+      author
+      imageUrl
+      publishedAt
+    }
+    favoritedAt
+  }
+}

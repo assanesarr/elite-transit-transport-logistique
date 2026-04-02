@@ -1,0 +1,54 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+}
+
+type Feed @table {
+  user: User!
+  name: String!
+  url: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  description: String
+  lastFetchedAt: Timestamp
+}
+
+type Category @table {
+  user: User!
+  name: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+}
+
+type FeedCategory @table(key: ["feed", "category"]) {
+  feed: Feed!
+  category: Category!
+  createdAt: Timestamp!
+}
+
+type Article @table {
+  feed: Feed!
+  title: String!
+  url: String!
+  publishedAt: Timestamp!
+  createdAt: Timestamp!
+  content: String
+  author: String
+  imageUrl: String
+}
+
+type ReadArticle @table(key: ["user", "article"]) {
+  user: User!
+  article: Article!
+  isRead: Boolean!
+  readAt: Timestamp!
+}
+
+type FavoriteArticle @table(key: ["user", "article"]) {
+  user: User!
+  article: Article!
+  isFavorite: Boolean!
+  favoritedAt: Timestamp!
+}
