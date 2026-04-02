@@ -28,23 +28,11 @@ import { useRouter } from "next/navigation"
 import CancelBtn from "./cancel-btn"
 
 const payements = [
+    "Debours",
     "Debarquement",
-    "Tax Port + Relevage",
-    "Escorte Douane + Retour Douanier",
-    "Circuit",
-    "Depotage",
-    "Surestarie",
-    "Transport",
-    "Assurance",
-    "Vacation Douane",
-    "Gainde",
-    // "Container N",
-    "TS Douane",
-    "Visite Douane",
-    "Fret",
-    "TRansfert LTA",
-    "Magasinage",
-    "Location Fourchette"
+    "Droit-Douanes",
+    "B.A.E",
+    "Enlevement",
 ]
 
 const initialState = { error: null }
