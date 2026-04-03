@@ -28,11 +28,14 @@ import { useRouter } from "next/navigation"
 import CancelBtn from "./cancel-btn"
 
 const payements = [
-    "Debours",
     "Debarquement",
     "Droit-Douanes",
     "B.A.E",
     "Enlevement",
+    "Magasinage",
+    "Surestarie",
+    "Amende",
+    "Liquidation"
 ]
 
 const initialState = { error: null }

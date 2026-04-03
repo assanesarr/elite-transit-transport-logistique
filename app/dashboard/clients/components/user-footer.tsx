@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useEffect, useState } from "react";
 import TrashBtn from "./trash-btn";
 import TrashDossier from "./trash-dossier";
-import { BadgeCheckIcon, Folder, Folders } from "lucide-react";
+import { BadgeCheckIcon, Folder, Folders, Printer } from "lucide-react";
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Separator } from "@/components/ui/separator";
 import { IconTrash } from "@tabler/icons-react";
@@ -33,7 +33,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
         <Drawer direction={isMobile ? "bottom" : "right"} >
             <DrawerTrigger asChild>
                 <Button variant="ghost" className="font-bold hover:underline text-sm w-fit px-0 text-left capitalize">
-                   <Folders /> {user.name}
+                    <Folders /> {user.name}
                 </Button>
             </DrawerTrigger>
             <DrawerContent className="data-[vaul-drawer-direction=right]:sm:max-w-xl">
@@ -97,12 +97,12 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                                         </TableRow>
                                                         <TableRow>
                                                             <TableCell className="font-medium text-right" colSpan={3}>NET A PAIE:</TableCell>
-                                                            <TableCell className="text-right">{new Intl.NumberFormat("fr-FR").format(dossier.montant_total )}</TableCell>
+                                                            <TableCell className="text-right">{new Intl.NumberFormat("fr-FR").format(dossier.montant_total)}</TableCell>
                                                         </TableRow>
-                                                        
+
                                                         <TableRow >
-                                                            <TableCell className="font-medium text-right" colSpan={3}>{(dossier.montant_total - totalVersement) <= 0 ? '': 'Restes à payer:'}</TableCell>
-                                                            <TableCell className="text-right">{ dossier.montant_total - totalVersement <= 0 ? (<Badge className="bg-green-600 text-white">PAYÉ</Badge>) : new Intl.NumberFormat("fr-FR").format(dossier.montant_total - totalVersement)}</TableCell>
+                                                            <TableCell className="font-medium text-right" colSpan={3}>{(dossier.montant_total - totalVersement) <= 0 ? '' : 'Restes à payer:'}</TableCell>
+                                                            <TableCell className="text-right">{dossier.montant_total - totalVersement <= 0 ? (<Badge className="bg-green-600 text-white">PAYÉ</Badge>) : new Intl.NumberFormat("fr-FR").format(dossier.montant_total - totalVersement)}</TableCell>
                                                         </TableRow>
                                                     </TableBody>
                                                 </Table>
@@ -127,18 +127,17 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                         return (
                                             <AccordionItem key={index} value={`item-${index}`}>
                                                 <AccordionTrigger >
-                                                   <div className="flex items-center gap-1"><Folder /> Dossier {dossier.dossierName}</div>
+                                                    <div className="flex items-center gap-1"><Folder /> Dossier {dossier.dossierName}</div>
                                                 </AccordionTrigger>
                                                 <AccordionContent  >
                                                     {
                                                         dossier.payements && dossier.payements.length > 0 ?
                                                             <>
-
                                                                 {
                                                                     dossier.payements.map((payement: any, pIndex: number) => (
                                                                         <ContextMenu key={pIndex}>
                                                                             <ContextMenuTrigger>
-                                                                                <Item variant="outline" size="sm" key={pIndex} onClick={() => {console.log("clicked...", dossier)}}>
+                                                                                <Item variant="outline" size="sm" key={pIndex} onClick={() => { console.log("clicked...", dossier) }}>
                                                                                     <ItemMedia>
                                                                                         <BadgeCheckIcon className="size-5 text-green-500" />
                                                                                     </ItemMedia>
@@ -160,7 +159,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                                                                         dossierId={dossier.id}
                                                                                         payementDate={payement.date}
                                                                                         setDossiers={setDossiers}
-                                                                                    />  
+                                                                                    />
                                                                                 </ContextMenuItem>
                                                                             </ContextMenuContent>
                                                                         </ContextMenu>
@@ -185,6 +184,15 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                                                         {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
                                                                     </ItemActions>
                                                                 </Item>
+                                                                <Item variant="muted" size="sm">
+
+                                                                    <ItemContent>
+                                                                        <ItemTitle className="font-bold">Résultat</ItemTitle>
+                                                                    </ItemContent>
+                                                                    <ItemActions>
+                                                                        {new Intl.NumberFormat("fr-FR").format((totalVersement - totalPayement) || 0)}
+                                                                    </ItemActions>
+                                                                </Item>
                                                             </>
 
                                                             : (
@@ -202,8 +210,21 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                     </div>
                 </div>
                 <DrawerFooter>
+                    <Button
+                        variant="outline"
+                        onClick={() => window.print()}
+                        className="print:hidden"
+                    >
+                        <Printer className="mr-2 h-4 w-4" /> Imprimer le reçu
+                    </Button>
                     <DrawerClose asChild>
-                        <Button variant="outline">Done</Button>
+                        <p className="hidden text-center text-xs print:text-muted-foreground mt-4 print:block ">
+                            Reçu généré par Elite Transit Transport Logistique. Merci de votre confiance!
+                        </p>
+                        {/* <>
+                            
+                            <Button variant="outline" className="print:hidden">Done</Button>
+                        </> */}
                     </DrawerClose>
                 </DrawerFooter>
             </DrawerContent>

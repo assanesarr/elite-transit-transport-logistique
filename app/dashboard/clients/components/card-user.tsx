@@ -70,13 +70,16 @@ export default function CardUser() {
                 const result = totalMontant - totalVersement
 
                 return (
-                    <Badge variant="outline" className={cn("", result <= 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-600 text-white dark:bg-red-600 dark:text-white")}>
-                        {result <= 0 ? (
-                            <><IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> PAYÉ</>
-                        ) : (
-                            <><IconLoader />En cours</>
-                        )}
-                    </Badge>
+                    totalMontant === 0 && totalVersement === 0 ? (<Badge variant="outline" className="bg-orange-300 text-amber-50">Nouveau</Badge>) :
+                        (
+                            <Badge variant="outline" className={cn("", result <= 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-600 text-white dark:bg-red-600 dark:text-white")}>
+                                {result <= 0 ? (
+                                    <><IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> PAYÉ</>
+                                ) : (
+                                    <><IconLoader />En cours</>
+                                )}
+                            </Badge>
+                        )
                 )
             }
         },
@@ -88,7 +91,7 @@ export default function CardUser() {
                     .flatMap((d: any) => d.versement)
                     .reduce((sum: number, v: any) => Number(sum) + Number(v.montant), 0);
 
-                    // console.log("total versement =>", total)
+                // console.log("total versement =>", total)
 
                 return new Intl.NumberFormat("fr-FR").format(total)
 
