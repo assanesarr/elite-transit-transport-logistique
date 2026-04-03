@@ -129,6 +129,9 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                             <AccordionItem key={index} value={`item-${index}`}>
                                                 <AccordionTrigger >
                                                     <div className="flex items-center gap-1"><Folder /> Dossier {dossier.dossierName}</div>
+                                                    <div className="font-bold">
+                                                         Versement   {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
+                                                    </div>
                                                 </AccordionTrigger>
                                                 <AccordionContent  >
                                                     {
@@ -176,17 +179,15 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                                                         {new Intl.NumberFormat("fr-FR").format(totalPayement || 0)}
                                                                     </ItemActions>
                                                                 </Item>
-                                                                <Item variant="muted" size="sm">
-
+                                                                {/* <Item variant="muted" size="sm">
                                                                     <ItemContent>
                                                                         <ItemTitle className="font-bold">Total Versement</ItemTitle>
                                                                     </ItemContent>
                                                                     <ItemActions>
                                                                         {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
                                                                     </ItemActions>
-                                                                </Item>
+                                                                </Item> */}
                                                                 <Item variant="muted" size="sm">
-
                                                                     <ItemContent>
                                                                         <ItemTitle className="font-bold">Résultat</ItemTitle>
                                                                     </ItemContent>

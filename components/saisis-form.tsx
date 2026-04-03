@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { toast } from "sonner"
 import { useFormState } from "react-dom"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { AlertCircleIcon, BanknoteArrowDown, BanknoteArrowUp } from "lucide-react"
+import { AlertCircleIcon, BanknoteArrowDown, BanknoteArrowUp, CalendarIcon } from "lucide-react"
 import SaveBtn from "./save-btn"
 import ShowRecu from "@/app/dashboard/components/show-recu"
 import { useClientsStore } from "@/store/clientStore"
@@ -26,6 +26,8 @@ import { useAgentsStore } from "@/store/agentStore"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import CancelBtn from "./cancel-btn"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { Calendar } from "./ui/calendar"
 
 const payements = [
     "Debarquement",
@@ -53,6 +55,7 @@ export function DialogSaisis() {
     const agents = useAgentsStore(state => state.agents)
     const [isPending, startTransition] = useTransition()
     const route = useRouter();
+    const [dateVirement, setDateVirement] = useState<Date>()
 
 
 
@@ -125,7 +128,15 @@ export function DialogSaisis() {
                                 </AlertDescription>
                             </Alert>
                         )}
-                        <form action={formAction} className="grid gap-4">
+                        <form action={
+                            async (formData) => {
+                                if (formData.get("payment_method")) {
+                                    formData.set("datevirement", dateVirement ? dateVirement.toLocaleDateString("fr-FR",{day: "numeric", month: "long", year: "numeric"}) : "")
+                                }
+                                // const formValues = Object.fromEntries(formData.entries());
+                                formAction(formData);
+                            }
+                        } className="grid gap-4">
                             <input type="hidden" name="type" value={type} />
                             <DialogHeader>
                                 <DialogTitle
@@ -238,9 +249,6 @@ export function DialogSaisis() {
                                             </div>
                                         </>)
                                     }
-
-
-
                                     <div className="grid gap-3">
                                         <Label htmlFor="montant-1">Montant {type === "encaissement" ? "reçu" : ""}</Label>
                                         <Input id="montant-1" name="montant" />
@@ -253,7 +261,6 @@ export function DialogSaisis() {
                                             </div>
                                         )
                                     }
-
                                     <div className="flex flex-col gap-3">
                                         <Label htmlFor="limit">Method Paiement</Label>
                                         <Select name="payment_method" defaultValue="ESPECE" onValueChange={setMethodPayement}>
@@ -366,6 +373,49 @@ export function DialogSaisis() {
                                         <div className="flex flex-col gap-3">
                                             <Label >Numero Cheque</Label>
                                             <Input name="numero_cheque" />
+                                        </div>
+                                    )
+                                }
+                                {
+                                    methodPayement === "VIREMENT" && (
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex gap-3">
+                                                <div className="flex flex-col gap-3">
+                                                    <Label htmlFor="limit">Banque</Label>
+                                                    <Select name="banque">
+                                                        <SelectTrigger className="w-[180px]">
+                                                            <SelectValue placeholder="Select a banques" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectLabel>Banque</SelectLabel>
+                                                                <SelectItem value="Banque Islamique du Senegal">Banque Islamique du Senegal</SelectItem>
+                                                                <SelectItem value="CBAO">CBAO</SelectItem>
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="flex-1 flex flex-col gap-3">
+                                                    <Label >Date Virement</Label>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                data-empty={!dateVirement}
+                                                                className="w-full justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
+                                                            >
+                                                                <CalendarIcon />
+                                                                {dateVirement ? dateVirement.toLocaleDateString() : "Select date"}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0">
+                                                            <Calendar mode="single" selected={dateVirement} onSelect={setDateVirement} />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                            </div>
+                                            <Label >Numero Virement</Label>
+                                            <Input name="numero_virement" />
                                         </div>
                                     )
                                 }

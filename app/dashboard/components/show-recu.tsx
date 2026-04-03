@@ -34,10 +34,10 @@ export default function ShowRecu(
                             </ItemContent>
                             <ItemActions >
                                 {recu?.type === 'decaissement' ? '-' : ''}
-                               {new Intl.NumberFormat("fr-FR", {
-                                 style: "currency",
-                                 currency: "XOF",
-                               }).format(recu?.montant || 0)}
+                                {new Intl.NumberFormat("fr-FR", {
+                                    style: "currency",
+                                    currency: "XOF",
+                                }).format(recu?.montant || 0)}
                             </ItemActions>
                         </Item>
                         <Item >
@@ -58,6 +58,28 @@ export default function ShowRecu(
                                         {recu?.numero_cheque || "N/A"}
                                     </ItemActions>
                                 </Item>
+                            )
+                        }
+                        {
+                            recu?.payment_method === "VIREMENT" && (
+                                <>
+                                    <Item >
+                                        <ItemContent>
+                                            <ItemTitle>Date Virement et Banque</ItemTitle>
+                                        </ItemContent>
+                                        <ItemActions >
+                                          {recu?.datevirement || "N/A"} {recu?.banque || "N/A"}
+                                        </ItemActions>
+                                    </Item>
+                                    <Item >
+                                        <ItemContent>
+                                            <ItemTitle>Numéro du virement</ItemTitle>
+                                        </ItemContent>
+                                        <ItemActions >
+                                            {recu?.numero_virement || "N/A"}
+                                        </ItemActions>
+                                    </Item>
+                                </>
                             )
                         }
                         {
@@ -136,7 +158,7 @@ export default function ShowRecu(
                     onClick={() => window.print()}
                     className="print:hidden"
                 >
-                   <Printer className="mr-2 h-4 w-4" /> Imprimer le reçu
+                    <Printer className="mr-2 h-4 w-4" /> Imprimer le reçu
                 </Button>
             </DialogContent>
         </Dialog>

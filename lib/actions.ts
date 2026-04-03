@@ -231,6 +231,15 @@ export async function addMouvement(prevState: FormState | null, formData: FormDa
             // return { success: true, message: "decaissement added successfully.", error: null };
         }
 
+        if (formValues.payment_method === "VIREMENT") {
+            const numeroVirement = formValues.numero_virement as string;
+            const banque = formValues.banque as string;
+            const datevirement = formValues.datevirement as string;
+            if (!numeroVirement) return { success: false, message: "Le numéro de virement est requis pour les paiements par virement.", error: "Le numéro de virement est requis pour les paiements par virement." };
+            if (!banque) return { success: false, message: "La banque est requise pour les paiements par virement.", error: "La banque est requise pour les paiements par virement." };
+            if (!datevirement) return { success: false, message: "La date de virement est requise pour les paiements par virement.", error: "La date de virement est requise pour les paiements par virement." };
+        }
+
         const snap = await adminDb.collection("clients").doc(clientId).get();
         formValues.clientName = snap.data()?.name || "";
         formValues.montant = (formValues.montant as string).replace(/\s+/g, "")
