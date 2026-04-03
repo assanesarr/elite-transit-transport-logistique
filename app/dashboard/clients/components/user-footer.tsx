@@ -9,12 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useEffect, useState } from "react";
 import TrashBtn from "./trash-btn";
 import TrashDossier from "./trash-dossier";
-import { BadgeCheckIcon, Folder, Folders, Printer } from "lucide-react";
+import { BadgeCheckIcon, Divide, Folder, Folders, Printer } from "lucide-react";
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Separator } from "@/components/ui/separator";
 import { IconTrash } from "@tabler/icons-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 
 
@@ -190,7 +191,9 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                                                         <ItemTitle className="font-bold">Résultat</ItemTitle>
                                                                     </ItemContent>
                                                                     <ItemActions>
-                                                                        {new Intl.NumberFormat("fr-FR").format((totalVersement - totalPayement) || 0)}
+                                                                        <Badge variant="outline" className={cn((totalVersement - totalPayement) >= 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-600 text-white dark:bg-red-600 dark:text-white")}>
+                                                                            {new Intl.NumberFormat("fr-FR").format((totalVersement - totalPayement) || 0)}
+                                                                        </Badge>
                                                                     </ItemActions>
                                                                 </Item>
                                                             </>
