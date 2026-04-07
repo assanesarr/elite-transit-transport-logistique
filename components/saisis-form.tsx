@@ -37,7 +37,11 @@ const payements = [
     "Magasinage",
     "Surestarie",
     "Amende",
-    "Liquidation"
+    "Liquidation",
+    "Douanes Thies",
+    "Douane Diourbel",
+    "Douane Mbour",
+    "Douane Kedougou"
 ]
 
 const initialState = { error: null }

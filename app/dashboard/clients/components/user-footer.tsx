@@ -130,7 +130,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                                 <AccordionTrigger >
                                                     <div className="flex items-center gap-1"><Folder /> Dossier {dossier.dossierName}</div>
                                                     <div className="font-bold">
-                                                         Versement   {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
+                                                        Versement   {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
                                                     </div>
                                                 </AccordionTrigger>
                                                 <AccordionContent  >
