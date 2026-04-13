@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import nextPWA from "next-pwa";
+import packageJson from './package.json';
 
 
 const withPWA = nextPWA({
@@ -14,6 +15,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   webpack(config) {
     return config;
+  },
+  env: {
+    NEXT_PUBLIC_APP_VERSION: packageJson.version,
   },
 };
 

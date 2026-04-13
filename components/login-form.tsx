@@ -11,11 +11,12 @@ import { LoginSubmit } from "@/lib/actions"
 import { toast } from "sonner";
 import InstallButton from "./install-button"
 import { useFormState, useFormStatus } from "react-dom"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Spinner } from "./ui/spinner"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { AlertCircleIcon } from "lucide-react"
+import { AlertCircleIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import { redirect } from "next/navigation"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
 
 // const login = async (e: React.FormEvent<HTMLFormElement>) => {
 //   e.preventDefault();
@@ -30,7 +31,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
-
+  const [show, setShow] = useState(false)
   const [state, formAction] = useFormState(LoginSubmit, null)
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export function LoginForm({
                 {state?.message}
               </AlertDescription>
             </Alert>
-          ) }
+          )}
         </div>
         <Field>
           <FieldLabel htmlFor="email">Email or phone</FieldLabel>
@@ -74,7 +75,22 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" name="password" required />
+          <InputGroup>
+            <InputGroupInput
+              id="inline-end-input"
+              type={show ? "text" : "password"}
+              placeholder="Enter password"
+              name="password"
+              required
+            />
+            <InputGroupAddon
+              align="inline-end"
+              className="cursor-pointer"
+              onClick={() => setShow(show => !show)}>
+              {show ? <EyeOffIcon /> : <EyeIcon />}
+            </InputGroupAddon>
+          </InputGroup>
+          {/* <Input id="password" type={show ? "text" : "password"} name="password" required /> */}
         </Field>
         <Field>
           <BtnLogin />

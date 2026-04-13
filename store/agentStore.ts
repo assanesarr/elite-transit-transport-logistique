@@ -3,8 +3,8 @@ import { create } from "zustand"
 type Agent = {
   id: string
   name: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
   createdAt: Date
 }
 

@@ -7,6 +7,7 @@ import { SiteHeader } from './components/site-header';
 import { adminDb } from '@/lib/firebase-admin';
 import FinanceProvider from './FinanceProvider';
 import { User } from './clients/components/card-user';
+import { EMPLOYE } from '../type';
 
 export default async function DashboardLayout({
     children,
@@ -33,6 +34,12 @@ export default async function DashboardLayout({
         .then((snapshot) => {
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         }) as any[];
+        
+    const employes = await adminDb.collection("users").where("role", "==", "EMPLOYE").get()
+        .then((snapshot) => {
+            return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        }) as EMPLOYE[];
+
     const mouvements = await adminDb.collection("mouvement").orderBy("createdAt", "desc").get()
         .then((snapshot) => {
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -46,7 +53,7 @@ export default async function DashboardLayout({
     const cookieStore = await cookies()
     const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
-    // console.log("layout->", mouvements)
+
 
     return (
         <SidebarProvider
@@ -62,6 +69,7 @@ export default async function DashboardLayout({
                 user={user as User}
                 clients={clinets}
                 agents={agents}
+                employes={employes}
             >
                 <AppSidebar variant="inset" />
                 <SidebarInset>

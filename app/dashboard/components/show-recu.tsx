@@ -16,6 +16,8 @@ export default function ShowRecu(
     //     console.log(key, value)
     // })
 
+    console.log(recu)
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>
@@ -68,7 +70,7 @@ export default function ShowRecu(
                                             <ItemTitle>Date Virement et Banque</ItemTitle>
                                         </ItemContent>
                                         <ItemActions >
-                                          {recu?.datevirement || "N/A"} {recu?.banque || "N/A"}
+                                            {recu?.datevirement || "N/A"} {recu?.banque || "N/A"}
                                         </ItemActions>
                                     </Item>
                                     <Item >
@@ -85,35 +87,84 @@ export default function ShowRecu(
                         {
                             recu?.type === 'decaissement' && (
                                 <>
-                                    <Item >
-                                        <ItemContent>
-                                            <ItemTitle>Nom de l'agent</ItemTitle>
-                                        </ItemContent>
-                                        <ItemActions className="capitalize">
-                                            {recu?.agent}
-                                        </ItemActions>
-                                    </Item>
+                                    {
+                                        recu?.clients === 'OTHER' ? (
+                                            <div>
 
-
+                                            </div>
+                                        ) : (
+                                            <Item >
+                                                <ItemContent>
+                                                    <ItemTitle>Nom de l'agent</ItemTitle>
+                                                </ItemContent>
+                                                <ItemActions className="capitalize">
+                                                    {recu?.agent}
+                                                </ItemActions>
+                                            </Item>
+                                        )
+                                    }
                                 </>
                             )
                         }
-                        <Item >
-                            <ItemContent>
-                                <ItemTitle>{recu?.type === 'encaissement' ? 'Payé par' : 'Pour le Client'}</ItemTitle>
-                            </ItemContent>
-                            <ItemActions className="capitalize">
-                                {recu?.clientName}
-                            </ItemActions>
-                        </Item>
-                        <Item >
-                            <ItemContent>
-                                <ItemTitle>Dossier</ItemTitle>
-                            </ItemContent>
-                            <ItemActions >
-                                {recu?.dossier_name || "N/A"}
-                            </ItemActions>
-                        </Item>
+                        {
+                            recu?.clients === 'OTHER' ? (
+                                <>
+
+                                    {/* {
+                                        Object.entries(recu).map(([key, value]) => (
+                                            <p key={key}>
+                                                {key}: {value}
+                                            </p>
+                                        ))
+                                    } */}
+
+                                    <Item >
+                                        <ItemContent>
+                                            <ItemTitle>{recu?.payement === 'Salaire' ? 'Employe' : 'Agent'}</ItemTitle>
+                                        </ItemContent>
+                                        <ItemActions className="capitalize">
+                                            {recu?.payement === 'Salaire' ? recu?.employe : recu?.agent }
+                                        </ItemActions>
+                                    </Item>
+                                    <Item >
+                                        <ItemContent>
+                                            <ItemTitle>{recu?.payement === 'Salaire' || recu?.payement === 'Location' ? 'Mois' : 'Libelle'}</ItemTitle>
+                                        </ItemContent>
+                                        <ItemActions >
+                                            {
+                                                recu?.payement === 'Salaire' || recu?.payement === 'Location' ?
+                                                    new Date(recu?.mois).toLocaleString('fr-FR', { month: "long", year: "numeric" }) || "N/A"
+                                                    : recu?.libelle || "N/A"
+                                            }
+                                            {/* {recu?.dossier_name || "N/A"} */}
+                                        </ItemActions>
+                                    </Item>
+                                </>
+                            ) : (
+
+                                <>
+                                    <Item >
+                                        <ItemContent>
+                                            <ItemTitle>{recu?.type === 'encaissement' ? 'Payé par' : 'Pour le Client'}</ItemTitle>
+                                        </ItemContent>
+                                        <ItemActions className="capitalize">
+                                            {recu?.clientName}
+                                        </ItemActions>
+                                    </Item>
+                                    <Item >
+                                        <ItemContent>
+                                            <ItemTitle>Dossier</ItemTitle>
+                                        </ItemContent>
+                                        <ItemActions >
+                                            {recu?.dossier_name || "N/A"}
+                                        </ItemActions>
+                                    </Item>
+                                </>
+
+                            )
+                        }
+
+
                         {
                             recu?.type === 'decaissement' && (
                                 <Item >
@@ -145,14 +196,14 @@ export default function ShowRecu(
                                 <ItemTitle>Référence</ItemTitle>
                             </ItemContent>
                             <ItemActions >
-                                {recu?.id}
+                                {recu?.ref || recu?.id || "N/A"}
                             </ItemActions>
                         </Item>
                         <p className="hidden text-center text-xs print:text-muted-foreground mt-4 print:block ">
                             Reçu généré par Elite Transit Transport Logistique. Merci de votre confiance!
                         </p>
                     </DialogDescription>
-                </DialogHeader>
+                </DialogHeader >
                 <Button
                     variant="outline"
                     onClick={() => window.print()}
@@ -160,7 +211,7 @@ export default function ShowRecu(
                 >
                     <Printer className="mr-2 h-4 w-4" /> Imprimer le reçu
                 </Button>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     )
 }

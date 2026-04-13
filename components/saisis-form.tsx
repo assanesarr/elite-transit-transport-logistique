@@ -23,11 +23,12 @@ import SaveBtn from "./save-btn"
 import ShowRecu from "@/app/dashboard/components/show-recu"
 import { useClientsStore } from "@/store/clientStore"
 import { useAgentsStore } from "@/store/agentStore"
-import { cn } from "@/lib/utils"
+import { cn, getMonthsUntilNow } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import CancelBtn from "./cancel-btn"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Calendar } from "./ui/calendar"
+import { useEmployesStore } from "@/store/useEmployesStore"
 
 const payements = [
     "Debarquement",
@@ -44,7 +45,16 @@ const payements = [
     "Douane Kedougou"
 ]
 
-const initialState = { error: null }
+const charge_bureau = [
+    "Transport",
+    "Repas",
+    "Internet",
+    "Telephone",
+    "Gainde",
+    "Woyofal",
+    "Location",
+    "Salaire"
+]
 
 export function DialogSaisis() {
     const [type, setType] = useState<"encaissement" | "decaissement">("encaissement");
@@ -57,9 +67,11 @@ export function DialogSaisis() {
     const [state, formAction] = useFormState(addMouvement, null)
     const clients = useClientsStore(state => state.clients)
     const agents = useAgentsStore(state => state.agents)
+    const employes = useEmployesStore(state => state.employes)
     const [isPending, startTransition] = useTransition()
     const route = useRouter();
     const [dateVirement, setDateVirement] = useState<Date>()
+    const [otherPayement, setOtherPayement] = useState<string | null>(null)
 
 
 
@@ -86,6 +98,7 @@ export function DialogSaisis() {
     useEffect(() => {
         if (state?.error) {
             toast.error(state.error);
+            setClientId("")
         } else if (state?.success) {
             toast.success("Enregistrement effectué avec succès!");
             // console.log("Form submission state:", state); // Log the form state to see if it's updating correctly
@@ -99,7 +112,7 @@ export function DialogSaisis() {
 
     return (
         <>
-            <ShowRecu open={openRecu} setOpen={setOpenRecu} recu={state?.data} />
+            <ShowRecu open={openRecu} setOpen={(v) => { setOpenRecu(false); setOtherPayement(null) }} recu={state?.data} />
             <Dialog onOpenChange={setOpen} open={open} >
                 <DialogTrigger asChild>
                     <SidebarMenuItem className="flex items-center gap-2">
@@ -135,7 +148,7 @@ export function DialogSaisis() {
                         <form action={
                             async (formData) => {
                                 if (formData.get("payment_method")) {
-                                    formData.set("datevirement", dateVirement ? dateVirement.toLocaleDateString("fr-FR",{day: "numeric", month: "long", year: "numeric"}) : "")
+                                    formData.set("datevirement", dateVirement ? dateVirement.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "")
                                 }
                                 // const formValues = Object.fromEntries(formData.entries());
                                 formAction(formData);
@@ -148,11 +161,6 @@ export function DialogSaisis() {
                                 >{type === "decaissement" ? <BanknoteArrowDown className="w-8 h-8 mr-2" /> : <BanknoteArrowUp className="w-8 h-8 mr-2" />} Operation {type} </DialogTitle>
                             </DialogHeader>
                             <div className="grid gap-4">
-                                {/* <div className="grid gap-3">
-                            <Label htmlFor="name-1">Libelle</Label>
-                            <Input id="name-1" name="libelle" />
-                        </div> */}
-
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="flex flex-col gap-3">
                                         <Label htmlFor="Clients">Clients</Label>
@@ -170,7 +178,7 @@ export function DialogSaisis() {
                                                                 ))
                                                             }
                                                             {
-                                                                type === "decaissement" && <SelectItem value="OTHER">Autre</SelectItem>
+                                                                type === "decaissement" && <SelectItem value="OTHER">Charge Bureau</SelectItem>
                                                             }
                                                         </>) : (
                                                             <SelectItem value="none">No clients available</SelectItem>
@@ -230,7 +238,7 @@ export function DialogSaisis() {
                                             }
                                             <div className="flex flex-col gap-3">
                                                 <Label htmlFor="Payement">Payement</Label>
-                                                <Select name="payement" >
+                                                <Select name="payement" onValueChange={(vl) => setOtherPayement(vl)}>
                                                     <SelectTrigger className="w-[180px]">
                                                         <SelectValue placeholder="Select a mode" />
                                                     </SelectTrigger>
@@ -240,8 +248,11 @@ export function DialogSaisis() {
                                                             {
                                                                 clientId === "OTHER" ?
                                                                     <>
-                                                                        <SelectItem value="TRANSPORT" >Transport</SelectItem>
-                                                                        <SelectItem value="REPAS" >Repas</SelectItem>
+                                                                        {
+                                                                            charge_bureau.map(ch => (
+                                                                                <SelectItem key={ch} value={ch} >{ch}</SelectItem>
+                                                                            ))
+                                                                        }
                                                                     </>
                                                                     : payements.map((p, index) => (
                                                                         <SelectItem key={index} value={p} >{p}</SelectItem>
@@ -253,10 +264,78 @@ export function DialogSaisis() {
                                             </div>
                                         </>)
                                     }
+                                    {
+                                        otherPayement === "Salaire" && (
+                                            <>
+                                                <div className="flex flex-col gap-3">
+                                                    <Label htmlFor="limit">Employers</Label>
+                                                    <Select name="employe" >
+                                                        <SelectTrigger className="w-[180px]">
+                                                            <SelectValue placeholder="Select Employers" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                <SelectLabel>Select Employers</SelectLabel>
+                                                                {employes.map(employe => <SelectItem key={employe.id} value={employe.name}>{employe.name}</SelectItem>)}
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                {/* <div className="flex flex-col gap-3">
+                                                    <Label htmlFor="limit">Mois</Label>
+                                                    <Select name="mois" >
+                                                        <SelectTrigger className="w-[180px]">
+                                                            <SelectValue placeholder="Select Mois" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectGroup>
+                                                                {
+                                                                    getMonthsUntilNow(new Date().getFullYear()).map(mounth => (
+                                                                        <SelectItem value={mounth.value}>{mounth.label}</SelectItem>
+                                                                    ))
+                                                                }
+                                                            </SelectGroup>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div> */}
+                                            </>
+                                        )
+                                    }
                                     <div className="grid gap-3">
                                         <Label htmlFor="montant-1">Montant {type === "encaissement" ? "reçu" : ""}</Label>
                                         <Input id="montant-1" name="montant" />
                                     </div>
+                                    {
+                                        clientId === "OTHER" && (
+                                            <div className="flex flex-col gap-3">
+                                                <Label htmlFor="limit">Mois</Label>
+                                                <Select name="mois" >
+                                                    <SelectTrigger className="w-[180px]">
+                                                        <SelectValue placeholder="Select Mois" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectGroup>
+                                                            {
+                                                                getMonthsUntilNow(new Date().getFullYear()).map(mounth => (
+                                                                    <SelectItem value={mounth.value}>{mounth.label}</SelectItem>
+                                                                ))
+                                                            }
+                                                        </SelectGroup>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )
+                                    }
+
+                                    {
+                                        type === "decaissement" && otherPayement !== "Location" && otherPayement !== "Salaire" && !otherPayement && (
+                                            <div className="grid gap-3">
+                                                <Label htmlFor="libelle">Libelle</Label>
+                                                <Input id="libelle" name="libelle" />
+                                            </div>
+                                        )
+                                    }
+
                                     {
                                         type === "encaissement" && modeEncaissement === "NOUVEAU" && (
                                             <div className="grid gap-3">
@@ -314,7 +393,7 @@ export function DialogSaisis() {
                                         )
                                     }
                                     {
-                                        type === "decaissement" && (
+                                        type === "decaissement" && otherPayement !== "Salaire" && (
                                             <div className="flex flex-col gap-3">
                                                 <Label htmlFor="agent">Agent</Label>
                                                 <Select name="agent">
@@ -424,6 +503,12 @@ export function DialogSaisis() {
                                     )
                                 }
                             </div>
+                            {clientId === "OTHER" && (
+                                <div className="grid gap-3">
+                                    <Label htmlFor="name-1">Libelle</Label>
+                                    <Input id="name-1" name="libelle" />
+                                </div>
+                            )}
                             <DialogFooter>
                                 <DialogClose asChild>
                                     <CancelBtn />

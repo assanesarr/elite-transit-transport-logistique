@@ -1,9 +1,11 @@
 'use server'
 
-import { adminDb } from "@/lib/firebase-admin";
+import { addVersement, adminDb, createDossier, db, getCollection, handleDecaissement } from "@/lib/firebase-admin";
 
 import { signIn, signOut } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { fail, formatFormData, generatePayRef, parseNumber, required, success } from "./utils";
+import { ref } from "firebase/database";
 
 export type FormState = {
     success: boolean
@@ -12,41 +14,40 @@ export type FormState = {
     data?: any
 }
 
-export async function loadMouvement() {
-    const snap = await adminDb.collection("mouvement").get();
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
+// export async function loadMouvement() {
+//     const snap = await adminDb.collection("mouvement").get();
+//     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// }
 
-export async function loadClient() {
-    const snap = await adminDb.collection("clients").get();
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
+// export async function loadClient() {
+//     const snap = await adminDb.collection("clients").get();
+//     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+// }
 
-export async function LoginSubmit(prevState: FormState | null, formData: FormData): Promise<FormState> {
+export const loadMouvement = async () => getCollection("mouvement");
+export const loadClient = async () => getCollection("clients");
 
+export async function LoginSubmit(
+    _: FormState | null,
+    formData: FormData
+): Promise<FormState> {
     try {
-        const email = formData.get("email") as string;
-        const password = formData.get("password") as string;
+        const { email, password } = formatFormData(formData);
 
-        if (!email || !password) {
-            throw new Error("Email and password are required.");
-        }
-
-        console.log("Attempting to sign in with email:", email, "and password:", password);
+        required(email, "Email requis");
+        required(password, "Mot de passe requis");
 
         await signIn("credentials", {
             identifier: email,
-            password: password,
+            password,
             redirect: false,
             callbackUrl: "/dashboard",
         });
 
-        return { success: true, message: "Login successful.", error: null };
-    } catch (error) {
-        console.error("Login error:", error);
-        return { success: false, message: "Les identifiants ne correspond pas a nos enregistrement.", error: (error as any)?.message || "An error occurred during login." };
+        return success("Login successful");
+    } catch (e: any) {
+        return fail("Identifiants invalides");
     }
-
 }
 
 export async function deleteItem(prevState: FormState | null, formData: FormData) {
@@ -59,217 +60,346 @@ export async function deleteItem(prevState: FormState | null, formData: FormData
     return { success: true, message: "history deleted successfully.", error: null }
 }
 
-export async function addMouvement(prevState: FormState | null, formData: FormData): Promise<FormState> {
+// export async function addMouvement(prevState: FormState | null, formData: FormData): Promise<FormState> {
 
+//     try {
+
+//         const formValues = { ...Object.fromEntries(formData.entries()) };
+//         if (!formValues.montant) return { success: false, message: "Le montant est obligatoire", error: "Le montant est obligatoire" };
+
+
+//         const clientId = formValues.clients as string;
+//         const mode = formValues.mode as string;
+
+
+//         // const clientId = formData.get("clients") as string;
+//         if (!clientId) return { success: false, message: "Le Client est obligatoire", error: "Le Client est obligatoire" };
+
+
+
+
+//         if (formValues.type === "encaissement") {
+//             const normalizedName = (formValues.dossier_name as string).trim().toUpperCase();
+//             const payment_method = formValues.payment_method
+//             if (!normalizedName) return { success: false, message: "Le dossier est obligatoire pour un client", error: "Le dossier est obligatoire pour un client" }
+//             if (!payment_method) return { success: false, message: "Method de paiement est obligatoire pour un client", error: "Le method de p[aiement est obligatoire pour un client" }
+
+
+//             if (mode === "NOUVEAU") {
+//                 if (!mode) return { success: false, message: "Le mode de paiement est obligatoire", error: "Le mode de paiement est obligatoire" }
+
+//                 const netPaye = Number((formValues.montant_total as string).replace(/\s+/g, ""))
+//                 const montant = Number((formValues.montant as string).replace(/\s+/g, ""))
+
+//                 if (Number.isNaN(montant)) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
+//                 if (Number.isNaN(netPaye)) return { success: false, message: "NetPaye invalide ", error: "Montant invalide" }
+
+
+
+//                 if (!netPaye) return { success: false, message: "Montant total requis pour les nouveaux dossiers", error: "Montant total requis pour les nouveaux dossiers" };
+//                 if (montant > netPaye) return { success: false, message: "Montant doit être inférieur ou égal au montant total pour les nouveaux dossiers", error: "Montant doit être inférieur ou égal au montant total pour les nouveaux dossiers" };
+
+//                 // const normalizedName = dossierName.trim().toLowerCase().replace(/\s+/g, '-');
+//                 const dossierRef = adminDb.collection("dossiers")
+//                     .where("clientId", "==", clientId)
+//                     .where("dossierName", "==", formValues.dossier_name as string);
+
+
+//                 const resps = await dossierRef.get();
+
+//                 if (!resps.empty) { throw new Error("Un dossier avec ce nom existe déjà pour ce client."); } // const last = resps.docs.length > 0 ? resps.docs[resps.docs.length - 1].data().dossierRef : 0;
+
+//                 // const next = last + 1;
+//                 // const formatted = String(next).padStart(3, "0");
+//                 const ref = adminDb.collection("dossiers").doc();
+
+
+//                 if (!normalizedName) return { success: false, message: "Le nom du dossier est requis pour les nouveaux dossiers.", error: "Le nom du dossier est requis pour les nouveaux dossiers." };
+
+//                 formValues.dossier_name = normalizedName;
+//                 // const normalizedName = normalizedName.concat(`-${normalizedName + 1}`);
+
+//                 console.log("Number of existing dossiers for this client:", ref.id);
+//                 await ref.set({
+//                     id: ref.id,
+//                     clientId: clientId,
+//                     dossierName: normalizedName,
+//                     montant_total: netPaye,
+//                     status: netPaye === montant ? "paid" : "pending",
+//                     versement: [
+//                         {
+//                             montant: montant,
+//                             method: formData.get("payment_method") as string,
+//                             date: Date.now(),
+//                         },
+//                     ],
+//                     mode: formData.get("mode") as string,
+//                     createdAt: Date.now(),
+//                 });
+
+//             } else if (mode === "ACOMPTE") {
+
+//                 // Adding versement to existing dossier 
+//                 const dossierId = formData.get("dossier_name") as string;
+//                 const dossierRef = adminDb.collection("dossiers")
+//                     .where("clientId", "==", clientId)
+//                     .where("id", "==", dossierId);
+
+//                 const snapshot = await dossierRef.get();
+//                 if (!snapshot.empty) {
+//                     const dossierDoc = snapshot.docs[0];
+//                     const versement = dossierDoc.data().versement || [];
+//                     const totalVersement = versement.reduce((sum: number, v: any) => Number(sum) + (Number(v.montant) || 0), 0);
+
+//                     const montant = Number((formValues.montant as string).replace(/\s+/g, ""))
+
+//                     if (Number.isNaN(montant)) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
+
+//                     const montantTotal = dossierDoc.data().montant_total || "0";
+//                     //   const netPaye = Number((formValues.montant_total as string).replace(/\s+/g, ""))
+
+//                     if (Number(totalVersement) + Number(montant) > Number(montantTotal)) {
+//                         return { success: false, message: "Le montant total des versements ne peut pas dépasser le montant total du dossier.", error: "Le montant total des versements ne peut pas dépasser le montant total du dossier." };
+//                     }
+//                     versement.push({
+//                         montant: montant,
+//                         method: formData.get("payment_method") as string,
+//                         date: Date.now(),
+//                     });
+
+//                     await adminDb.collection("dossiers").doc(dossierDoc.id).update({
+//                         versement: versement,
+//                         updatedAt: Date.now(),
+//                     });
+//                 }
+//             }
+//         } else if (formValues.type === "decaissement") {
+//             const clientId = formValues.clients as string;
+//             console.log(clientId)
+
+//             if (!clientId) return { success: false, message: "Le Client est obligatoire", error: "Le Client est obligatoire" };
+//             if (clientId !== "OTHER") {
+//                 const dossierId = formValues.dossier_name as string;
+//                 const agent = formValues.agent as string;
+//                 if (!dossierId) return { success: false, message: "Dossier ID is required for decaissement", error: "Dossier ID is required for decaissement" };
+//                 if (!agent) return { success: false, message: "L'agent est obligatoire", error: "L'agent est obligatoire" }
+
+//                 const payement = formValues.payement as string;
+//                 const montant = (formValues.montant as string).replace(/\s+/g, "");
+
+
+//                 if (!payement) return { success: false, message: "Le type de payement est requis pour les décaissements", error: "Le type de payement est requis pour les décaissements" };
+//                 if (!montant) return { success: false, message: "Le montant est requis pour les décaissements", error: "Le montant est requis pour les décaissements" };
+//                 if (Number.isNaN(Number(montant))) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
+
+
+//                 const dossierRef = adminDb.collection("dossiers")
+//                     .where("clientId", "==", clientId)
+//                     .where("id", "==", dossierId);
+//                 const snapshot = await dossierRef.get();
+//                 if (!snapshot.empty) {
+//                     const dossierDoc = snapshot.docs[0];
+//                     const payements = dossierDoc.data().payements || [];
+
+
+//                     payements.push({
+//                         montant: montant,
+//                         payement: payement,
+//                         date: Date.now(),
+//                     });
+
+//                     await adminDb.collection("dossiers")
+//                         .doc(dossierDoc.id)
+//                         .update({
+//                             payements: payements,
+//                             updatedAt: Date.now(),
+//                         });
+//                 }
+//             }
+
+
+//             // Handle decaissement logic if needed TODO
+//         }
+
+//         // formValues.dossier_name = normalizedName;
+//         if (formValues.type === "decaissement" || mode === "ACOMPTE") {
+//             const ds = await adminDb.collection("dossiers")
+//                 .where("clientId", "==", clientId)
+//                 .where("id", "==", formValues.dossier_name as string)
+//                 .get()
+//                 .then((snapshot) => {
+//                     if (!snapshot.empty) {
+//                         return snapshot.docs[0].data();
+//                     }
+//                     return null;
+//                 });
+
+//             formValues.dossier_name = ds?.dossierName;
+//             if (!formValues.dossier_name) return { success: false, message: "Le dossier est obligatoire pour un client", error: "Le dossier est obligatoire pour un client" }
+
+//             // console.log("Dossier data for decaissement/acompte:", formValues);
+//             // return { success: true, message: "decaissement added successfully.", error: null };
+//         }
+
+//         if (formValues.payment_method === "VIREMENT") {
+//             const numeroVirement = formValues.numero_virement as string;
+//             const banque = formValues.banque as string;
+//             const datevirement = formValues.datevirement as string;
+//             if (!numeroVirement) return { success: false, message: "Le numéro de virement est requis pour les paiements par virement.", error: "Le numéro de virement est requis pour les paiements par virement." };
+//             if (!banque) return { success: false, message: "La banque est requise pour les paiements par virement.", error: "La banque est requise pour les paiements par virement." };
+//             if (!datevirement) return { success: false, message: "La date de virement est requise pour les paiements par virement.", error: "La date de virement est requise pour les paiements par virement." };
+//         }
+
+//         const snap = await adminDb.collection("clients").doc(clientId).get();
+//         formValues.clientName = snap.data()?.name || "";
+//         formValues.montant = (formValues.montant as string).replace(/\s+/g, "")
+
+
+//         const docRef = await adminDb.collection("mouvement").add({
+//             ...formValues,
+//             createdAt: Date.now(),
+//         });
+
+//         // 🔥 Get inserted document
+//         const docSnap = await docRef.get()
+//         // if (docSnap.exists) {
+//         //     console.log("Inserted data:", docSnap.data())
+//         // }
+
+//         revalidatePath("/dashboard/tables");
+//         revalidatePath("/dashboard/clients");
+//         revalidatePath("/dashboard");
+//         return { success: true, message: "Mouvement added successfully.", error: null, data: { id: docRef.id, ...docSnap.data() } };
+
+//     } catch (error) {
+//         console.error("Error adding mouvement:", error);
+//         return {
+//             error: error instanceof Error ? error.message : "An unknown error occurred.",
+//             success: false,
+//             message: error instanceof Error ? error.message : "An unknown error occurred.",
+//         }; // Rethrow the error to be caught by the caller
+//     }
+
+// }
+
+export async function addMouvement(
+    _: FormState | null,
+    formData: FormData
+): Promise<FormState> {
     try {
+        const formValues = formatFormData(formData);
 
-        const formValues = { ...Object.fromEntries(formData.entries()) };
-        if (!formValues.montant) return { success: false, message: "Le montant est obligatoire", error: "Le montant est obligatoire" };
-
+        required(formValues.montant, "Montant requis");
+        required(formValues.clients, "Client requis");
 
         const clientId = formValues.clients as string;
-        const mode = formValues.mode as string;
-        const normalizedName = (formValues.dossier_name as string).trim().toUpperCase();
-        const payment_method = formValues.payment_method
-        if (!normalizedName) return { success: false, message: "Le dossier est obligatoire pour un client", error: "Le dossier est obligatoire pour un client" }
-        if (!payment_method) return { success: false, message: "Method de paiement est obligatoire pour un client", error: "Le method de p[aiement est obligatoire pour un client" }
-        // const clientId = formData.get("clients") as string;
-        if (!clientId) return { success: false, message: "Le Client est obligatoire", error: "Le Client est obligatoire" };
-
-
 
 
         if (formValues.type === "encaissement") {
+            required(formValues.dossier_name, "Dossier requis");
+            required(formValues.payment_method, "Méthode requise");
 
-            if (mode === "NOUVEAU") {
-                if (!mode) return { success: false, message: "Le mode de paiement est obligatoire", error: "Le mode de paiement est obligatoire" }
-
-                const netPaye = Number((formValues.montant_total as string).replace(/\s+/g, ""))
-                const montant = Number((formValues.montant as string).replace(/\s+/g, ""))
-
-                if (Number.isNaN(montant)) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
-                if (Number.isNaN(netPaye)) return { success: false, message: "NetPaye invalide ", error: "Montant invalide" }
-
-
-
-                if (!netPaye) return { success: false, message: "Montant total requis pour les nouveaux dossiers", error: "Montant total requis pour les nouveaux dossiers" };
-                if (montant > netPaye) return { success: false, message: "Montant doit être inférieur ou égal au montant total pour les nouveaux dossiers", error: "Montant doit être inférieur ou égal au montant total pour les nouveaux dossiers" };
-
-                // const normalizedName = dossierName.trim().toLowerCase().replace(/\s+/g, '-');
-                const dossierRef = adminDb.collection("dossiers")
-                    .where("clientId", "==", clientId)
-                    .where("dossierName", "==", formValues.dossier_name as string);
-
-
-                const resps = await dossierRef.get();
-
-                if (!resps.empty) { throw new Error("Un dossier avec ce nom existe déjà pour ce client."); } // const last = resps.docs.length > 0 ? resps.docs[resps.docs.length - 1].data().dossierRef : 0;
-
-                // const next = last + 1;
-                // const formatted = String(next).padStart(3, "0");
-                const ref = adminDb.collection("dossiers").doc();
-
-
-                if (!normalizedName) return { success: false, message: "Le nom du dossier est requis pour les nouveaux dossiers.", error: "Le nom du dossier est requis pour les nouveaux dossiers." };
-
-                formValues.dossier_name = normalizedName;
-                // const normalizedName = normalizedName.concat(`-${normalizedName + 1}`);
-
-                console.log("Number of existing dossiers for this client:", ref.id);
-                await ref.set({
-                    id: ref.id,
-                    clientId: clientId,
-                    dossierName: normalizedName,
-                    montant_total: netPaye,
-                    status: netPaye === montant ? "paid" : "pending",
-                    versement: [
-                        {
-                            montant: montant,
-                            method: formData.get("payment_method") as string,
-                            date: Date.now(),
-                        },
-                    ],
-                    mode: formData.get("mode") as string,
-                    createdAt: Date.now(),
-                });
-
-            } else if (mode === "ACOMPTE") {
-
-                // Adding versement to existing dossier 
-                const dossierId = formData.get("dossier_name") as string;
-                const dossierRef = adminDb.collection("dossiers")
-                    .where("clientId", "==", clientId)
-                    .where("id", "==", dossierId);
-
-                const snapshot = await dossierRef.get();
-                if (!snapshot.empty) {
-                    const dossierDoc = snapshot.docs[0];
-                    const versement = dossierDoc.data().versement || [];
-                    const totalVersement = versement.reduce((sum: number, v: any) => Number(sum) + (Number(v.montant) || 0), 0);
-
-                    const montant = Number((formValues.montant as string).replace(/\s+/g, ""))
-
-                    if (Number.isNaN(montant)) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
-
-                    const montantTotal = dossierDoc.data().montant_total || "0";
-                    //   const netPaye = Number((formValues.montant_total as string).replace(/\s+/g, ""))
-
-                    if (Number(totalVersement) + Number(montant) > Number(montantTotal)) {
-                        return { success: false, message: "Le montant total des versements ne peut pas dépasser le montant total du dossier.", error: "Le montant total des versements ne peut pas dépasser le montant total du dossier." };
-                    }
-                    versement.push({
-                        montant: montant,
-                        method: formData.get("payment_method") as string,
-                        date: Date.now(),
-                    });
-
-                    await adminDb.collection("dossiers").doc(dossierDoc.id).update({
-                        versement: versement,
-                        updatedAt: Date.now(),
-                    });
-                }
+            if (formValues.mode === "NOUVEAU") {
+                await createDossier({ clientId, formValues });
+            } else if (formValues.mode === "ACOMPTE") {
+                formValues.dossier_name = await addVersement({ clientId, formValues });
             }
-        } else if (formValues.type === "decaissement") {
-            const clientId = formValues.clients as string;
-            if (!clientId) return { success: false, message: "Le Client est obligatoire", error: "Le Client est obligatoire" };
+        }
 
-            const dossierId = formValues.dossier_name as string;
-            const payement = formValues.payement as string;
-            const montant = (formValues.montant as string).replace(/\s+/g, "");
-            const agent = formValues.agent as string;
+        if (formValues.type === "decaissement") {
+            // const clientId = formValues.clients as string;
+            // required(formValues.clients, "Le Client est obligatoire");
+            formValues.dossier_name = await handleDecaissement(clientId, formValues) as string
+            // if (!clientId) return { success: false, message: "Le Client est obligatoire", error: "Le Client est obligatoire" };
+            // if (clientId !== "OTHER") {
+            //     const dossierId = formValues.dossier_name as string;
+            //     const agent = formValues.agent as string;
+            //     if (!dossierId) return { success: false, message: "Dossier ID is required for decaissement", error: "Dossier ID is required for decaissement" };
+            //     if (!agent) return { success: false, message: "L'agent est obligatoire", error: "L'agent est obligatoire" }
 
-            if (!dossierId) return { success: false, message: "Dossier ID is required for decaissement", error: "Dossier ID is required for decaissement" };
-            if (!payement) return { success: false, message: "Le type de payement est requis pour les décaissements", error: "Le type de payement est requis pour les décaissements" };
-            if (!montant) return { success: false, message: "Le montant est requis pour les décaissements", error: "Le montant est requis pour les décaissements" };
-            if (!agent) return { success: false, message: "L'agent est obligatoire", error: "L'agent est obligatoire" }
-            if (Number.isNaN(Number(montant))) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
-
-            const dossierRef = adminDb.collection("dossiers")
-                .where("clientId", "==", clientId)
-                .where("id", "==", dossierId);
-
-            const snapshot = await dossierRef.get();
-            if (!snapshot.empty) {
-                const dossierDoc = snapshot.docs[0];
-                const payements = dossierDoc.data().payements || [];
+            //     const payement = formValues.payement as string;
+            //     const montant = (formValues.montant as string).replace(/\s+/g, "");
 
 
-                payements.push({
-                    montant: montant,
-                    payement: payement,
-                    date: Date.now(),
-                });
+            //     if (!payement) return { success: false, message: "Le type de payement est requis pour les décaissements", error: "Le type de payement est requis pour les décaissements" };
+            //     if (!montant) return { success: false, message: "Le montant est requis pour les décaissements", error: "Le montant est requis pour les décaissements" };
+            //     if (Number.isNaN(Number(montant))) return { success: false, message: "Montant invalide ", error: "Montant invalide" }
 
-                await adminDb.collection("dossiers")
-                    .doc(dossierDoc.id)
-                    .update({
-                        payements: payements,
-                        updatedAt: Date.now(),
-                    });
-            }
+
+            //     const dossierRef = adminDb.collection("dossiers")
+            //         .where("clientId", "==", clientId)
+            //         .where("id", "==", dossierId);
+            //     const snapshot = await dossierRef.get();
+            //     if (!snapshot.empty) {
+            //         const dossierDoc = snapshot.docs[0];
+            //         const payements = dossierDoc.data().payements || [];
+
+
+            //         payements.push({
+            //             montant: montant,
+            //             payement: payement,
+            //             date: Date.now(),
+            //         });
+
+            //         await adminDb.collection("dossiers")
+            //             .doc(dossierDoc.id)
+            //             .update({
+            //                 payements: payements,
+            //                 updatedAt: Date.now(),
+            //             });
+            //     }
+            // } else {
+            //     //TODO logique
+            // }
+
 
             // Handle decaissement logic if needed TODO
+
         }
 
-        // formValues.dossier_name = normalizedName;
-        if (formValues.type === "decaissement" || mode === "ACOMPTE") {
-            const ds = await adminDb.collection("dossiers")
-                .where("clientId", "==", clientId)
-                .where("id", "==", formValues.dossier_name as string)
-                .get()
-                .then((snapshot) => {
-                    if (!snapshot.empty) {
-                        return snapshot.docs[0].data();
-                    }
-                    return null;
-                });
+        if (clientId === "OTHER") {
+            const docRef = await db.mouvement().add({
+                ...formValues,
+                mois: formValues.mois ? `${formValues.annee}-${String(formValues.mois).padStart(2, "0")}` : undefined,
+                montant: parseNumber(formValues.montant),
+                // clientName: client.data()?.name || "",
+                ref: generatePayRef(),
+                createdAt: Date.now(),
+            });
+             const docSnap = await docRef.get()
 
-            formValues.dossier_name = ds?.dossierName;
-            if (!formValues.dossier_name) return { success: false, message: "Le dossier est obligatoire pour un client", error: "Le dossier est obligatoire pour un client" }
-
-            // console.log("Dossier data for decaissement/acompte:", formValues);
-            // return { success: true, message: "decaissement added successfully.", error: null };
+            return success("Mouvement ajouté", {
+                id: docRef.id,
+                ...docSnap.data()
+            });
         }
 
-        if (formValues.payment_method === "VIREMENT") {
-            const numeroVirement = formValues.numero_virement as string;
-            const banque = formValues.banque as string;
-            const datevirement = formValues.datevirement as string;
-            if (!numeroVirement) return { success: false, message: "Le numéro de virement est requis pour les paiements par virement.", error: "Le numéro de virement est requis pour les paiements par virement." };
-            if (!banque) return { success: false, message: "La banque est requise pour les paiements par virement.", error: "La banque est requise pour les paiements par virement." };
-            if (!datevirement) return { success: false, message: "La date de virement est requise pour les paiements par virement.", error: "La date de virement est requise pour les paiements par virement." };
-        }
 
-        const snap = await adminDb.collection("clients").doc(clientId).get();
-        formValues.clientName = snap.data()?.name || "";
-        formValues.montant = (formValues.montant as string).replace(/\s+/g, "")
+        // 🔥 enrich data
+        const client = await db.clients().doc(clientId).get();
 
-
-        const docRef = await adminDb.collection("mouvement").add({
+        const docRef = await db.mouvement().add({
             ...formValues,
+            montant: parseNumber(formValues.montant),
+            clientName: client.data()?.name || "",
+            ref: generatePayRef(),
             createdAt: Date.now(),
         });
 
-        // 🔥 Get inserted document
         const docSnap = await docRef.get()
         // if (docSnap.exists) {
         //     console.log("Inserted data:", docSnap.data())
         // }
 
-        revalidatePath("/dashboard/tables");
-        revalidatePath("/dashboard/clients");
         revalidatePath("/dashboard");
-        return { success: true, message: "Mouvement added successfully.", error: null, data: { id: docRef.id, ...docSnap.data() } };
 
-    } catch (error) {
-        console.error("Error adding mouvement:", error);
-        return {
-            error: error instanceof Error ? error.message : "An unknown error occurred.",
-            success: false,
-            message: error instanceof Error ? error.message : "An unknown error occurred.",
-        }; // Rethrow the error to be caught by the caller
+        return success("Mouvement ajouté", {
+            id: docRef.id,
+            ...docSnap.data()
+        });
+    } catch (e: any) {
+        return fail(e.message);
     }
-
 }
 
 export async function handleSignout(formData: FormData) {
@@ -370,6 +500,13 @@ export async function addUser(prevState: FormState | null, formData: FormData): 
     const role = formData.get("role") as string;
     const password = formData.get("password") as string;
 
+    if (role === "EMPLOYE") {
+        const poste = formData.get("poste")
+        const statut = formData.get("statut")
+        if (!poste) return { success: false, message: "Le poste de l'employe est required.", error: "Le poste de l'employe est required." };
+        if (!statut) return { success: false, message: "Le statut de l'employe est required.", error: "Le statut de l'employe est required." };
+    }
+
     if (!email) return { success: false, message: "Email is required.", error: "Email is required." };
     if (!name) return { success: false, message: "Name is required.", error: "Name is required." };
 
@@ -403,6 +540,8 @@ export async function addUser(prevState: FormState | null, formData: FormData): 
     revalidatePath("/dashboard/settings");
     return { success: true, message: "User added successfully.", error: null };
 }
+
+
 
 export async function updateUser(prevState: FormState | null, formData: FormData) {
     const id = formData.get("id");
@@ -438,5 +577,50 @@ export async function deleteUser(prevState: FormState | null, formData: FormData
     await usersRef.delete();
     revalidatePath("/dashboard/settings");
     return { success: true, message: "User deleted successfully.", error: null };
+}
+
+export async function addEmploye(prevState: FormState | null, formData: FormData): Promise<FormState> {
+    // const email = formData.get("email") as string;
+    const name = formData.get("name") as string;
+    const poste = formData.get("poste") as string;
+    const salaire = formData.get("salaire") as string;
+    const statut = formData.get("statut") as string;
+    // const password = formData.get("password") as string;
+
+    // if (!email) return { success: false, message: "Email is required.", error: "Email is required." };
+    if (!name) return { success: false, message: "Name is required.", error: "Name is required." };
+    if (!poste) return { success: false, message: "Poste is required.", error: "Poste is required." };
+    if (!salaire) return { success: false, message: "Salaire is required.", error: "salaire is required." };
+    if (!statut) return { success: false, message: "Statut is required.", error: "Statut is required." };
+
+    const usersRef = adminDb.collection("employes");
+
+
+    const docId = await adminDb.runTransaction(async (transaction) => {
+        // 1) Vérifier si email existe déjà
+        const q = usersRef.where("name", "==", name);
+        const snapshot = await transaction.get(q);
+
+        if (!snapshot.empty) return null
+
+        const rq = usersRef.where("name", "==", name);
+        const snap = await transaction.get(rq)
+
+        if (!snap.empty) return null
+
+        // 2) Ajouter l’utilisateur
+        const docRef = usersRef.doc();
+        transaction.set(docRef, { ...Object.fromEntries(formData.entries()), createdAt: Date.now() });
+
+        return docRef.id;
+    });
+
+    if (!docId) {
+        return { success: false, message: "Failed to add user. Le nom existe déjà.", error: "Failed to add user." };
+    }
+
+
+    revalidatePath("/dashboard/employes");
+    return { success: true, message: "Employe added successfully.", error: null };
 }
 

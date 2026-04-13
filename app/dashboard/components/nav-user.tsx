@@ -34,7 +34,8 @@ import { useAppStore } from "@/store/useAppStore"
 
 export function NavUser() {
     const { isMobile } = useSidebar()
-     const user = useAppStore((state) => state.user)
+    const user = useAppStore((state) => state.user)
+    const version = process.env.NEXT_PUBLIC_APP_VERSION;
 
     return (
         <SidebarMenu>
@@ -55,6 +56,7 @@ export function NavUser() {
                                     {user?.email}
                                 </span>
                             </div>
+                            {version && <span className="text-xs text-muted-foreground ml-2">TransitPro v{version}</span>}
                             <IconDotsVertical className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -66,6 +68,7 @@ export function NavUser() {
                     >
                         <DropdownMenuLabel className="p-0 font-normal">
                             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+
                                 <Avatar className="h-8 w-8 rounded-lg">
                                     <AvatarImage src={user?.avatar} alt={user?.name} />
                                     <AvatarFallback className="rounded-lg">CN</AvatarFallback>
@@ -76,14 +79,15 @@ export function NavUser() {
                                         {user?.email}
                                     </span>
                                 </div>
+                                {version && <span className="text-xs text-muted-foreground ml-2">TransitPro v{version}</span>}
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
+                            {/* <DropdownMenuItem>
                                 <IconUserCircle />
                                 Account
-                            </DropdownMenuItem>
+                            </DropdownMenuItem> */}
                             {/* <DropdownMenuItem>
                                 <IconCreditCard />
                                 Billing
