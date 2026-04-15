@@ -1,7 +1,7 @@
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getDatabase } from "firebase-admin/database";
-import { generatePayRef, parseNumber, required } from "./utils";
+import { generatePayRef, getNextNumero, parseNumber, required } from "./utils";
 // import serviceAccount from "@/ssni-a6391-firebase-adminsdk-rdgg2-886649d1f1.json";
 
 const serviceKey = JSON.parse(process.env.FIREBASE_ADMIN_KEY as string);
@@ -40,12 +40,23 @@ export async function createDossier({ clientId, formValues }: any) {
 
   const ref = db.dossiers().doc();
 
+  const snapshot = await adminDb.collection("dossiers").get();
+
+  const dossiers = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+
+  const rf = getNextNumero(dossiers)
+
   await ref.set({
     id: ref.id,
     clientId,
     dossierName: formValues.dossier_name.trim().toUpperCase(),
+    reference: rf,
     montant_total: total,
-    status: total === montant ? "paid" : "pending",
+    status: total === montant ? "PAYE" : "pending",
     versement: [
       {
         montant,
@@ -102,7 +113,7 @@ export async function handleDecaissement(clientId: string, formValues: any) {
 
   const montant = parseNumber(formValues.montant);
   if (Number.isNaN(montant)) throw new Error("Montant invalide");
-   required(formValues.payement, "Paiement requis");
+  required(formValues.payement, "Paiement requis");
 
   if (clientId === "OTHER") {
     const ref = db.chargeBureau().doc();
@@ -121,7 +132,7 @@ export async function handleDecaissement(clientId: string, formValues: any) {
 
   required(formValues.dossier_name, "Dossier requis");
   required(formValues.agent, "Agent requis");
- 
+
   const snap = await db.dossiers()
     .where("clientId", "==", clientId)
     .where("id", "==", formValues.dossier_name)

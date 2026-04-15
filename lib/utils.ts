@@ -208,3 +208,31 @@ export const fail = (message: string) => ({
   message,
   error: message,
 });
+
+export const getNextNumero = (dossiers: any[]) => {
+  const currentYear = new Date().getFullYear();
+
+  const numeros = dossiers
+    .map(d => {
+      if(!d.reference) return null
+      
+      const parts = d.reference.split("-");
+      
+      // Vérifie structure valide
+      if (parts.length !== 3) return null;
+
+      const [prefix, year, num] = parts;
+
+      // On filtre uniquement l'année en cours
+      if (prefix !== "DOS" || Number(year) !== currentYear) return null;
+
+      return Number(num);
+    })
+    .filter((n): n is number => n !== null);
+
+  const max = numeros.length ? Math.max(...numeros) : 0;
+
+  const next = String(max + 1).padStart(3, "0");
+
+  return `DOS-${currentYear}-${next}`;
+};

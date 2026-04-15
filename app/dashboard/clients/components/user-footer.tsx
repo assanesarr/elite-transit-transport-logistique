@@ -5,7 +5,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, Dr
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useEffect, useState } from "react";
 import TrashBtn from "./trash-btn";
 import TrashDossier from "./trash-dossier";
@@ -33,14 +33,15 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
     return (
         <Drawer direction={isMobile ? "bottom" : "right"} >
             <DrawerTrigger asChild>
-                <Button variant="ghost" className="font-bold hover:underline text-sm w-fit px-0 text-left capitalize">
-                    <Folders /> {user.name}
+                <Button variant="ghost" className="flex gap-1 hover:underline  w-fit px-0 text-left capitalize">
+                    <span className="flex font-bold"><Folders /> {user.name}</span>
+                    <span className="text-xs"> ({dossiers.length} Dossier{dossiers.length > 1 && "s"})</span>
                 </Button>
             </DrawerTrigger>
             <DrawerContent className="data-[vaul-drawer-direction=right]:sm:max-w-xl">
                 <DrawerHeader className="gap-1">
                     <DrawerTitle className="text-xl font-bold">{user.name}</DrawerTitle>
-                    <DrawerDescription></DrawerDescription>
+                    <DrawerDescription>{dossiers.length} Dossier{dossiers.length > 1 && "s"}</DrawerDescription>
                 </DrawerHeader>
                 <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
                     <h1 className="text-xl font-bold">Encaissement </h1>
@@ -63,6 +64,9 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                             <AccordionContent>
 
                                                 <Table>
+                                                    <TableCaption className="caption-top text-left font-semibold text-base mb-2">
+                                                        Dossier ref {dossier.reference}
+                                                    </TableCaption>
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead>Action</TableHead>
