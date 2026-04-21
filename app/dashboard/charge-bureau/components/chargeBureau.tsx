@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -32,10 +34,17 @@ import {
   Cell,
 } from "recharts";
 import { getMonthsUntilNow, getRangeLabel } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { useEmployesStore } from "@/store/useEmployesStore"
+import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
 
 /* ── Constants ── */
 const CATEGORIES = [
   "Transport",
+  "Orbus",
   "Repas",
   "Internet",
   "Telephone",
@@ -50,8 +59,9 @@ const MOIS = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
-const CAT_COLORS : Record<string, string | string> = {
+const CAT_COLORS: Record<string, string | string> = {
   Transport: "#3b82f6",
+  Orbus: "#3b82f6",
   Repas: "#f59e0b",
   Internet: "#8b5cf6",
   Telephone: "#06b6d4",
@@ -61,8 +71,9 @@ const CAT_COLORS : Record<string, string | string> = {
   Salaire: "#6366f1",
 };
 
-const CAT_ICONS : Record<string, number | string> = {
+const CAT_ICONS: Record<string, number | string> = {
   Transport: "🚌",
+  Orbus: "🚌",
   Repas: "🍽️",
   Internet: "📡",
   Telephone: "📱",
@@ -137,8 +148,11 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [moisVue, setMoisVue] = useState(currentMonth); // Mois en cours par défaut
   const allmois = getMonthsUntilNow(new Date().getFullYear());
+  const [modalOpen, setModalOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const employes = useEmployesStore(state => state.employes)
 
-  // const [form, setForm] = useState({ categorie: "Transport", description: "", montant: "", mois: "4", annee: "2026", date: "", note: "" });
+  const [form, setForm] = useState({ payement: "Transport", description: "", montant: "", mois: (new Date()).toISOString().slice(0, 7), annee: String(new Date().getFullYear()), date: "", note: "", clientId: "OTHER", type: "decaissement", payment_method: "ESPECE" });
 
   /* Filtered table rows */
   const filtered = useMemo(() => {
@@ -175,7 +189,7 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
       CATEGORIES.forEach(cat => {
         obj[cat] = charges.filter(c => c.mois === m.value && c.payement === cat).reduce((s, c) => s + Number(c.montant), 0);
       });
-      console.log("Bar data for", obj);
+      // console.log("Bar data for", obj);
       return obj;
     });
   }, [charges]);
@@ -183,21 +197,43 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
   const mois = new Date().getMonth() + 1;
 
   /* Add charge */
-  // const ajouterCharge = () => {
-  //   if (!form.montant || !form.description) return;
-  //   setCharges(prev => [...prev, {
-  //     ...form,
-  //     id: Date.now(),
-  //     montant: parseInt(form.montant),
-  //     mois: parseInt(form.mois),
-  //     annee: parseInt(form.annee),
-  //     date: form.date || `01/${String(form.mois).padStart(2,"0")}/${form.annee}`,
-  //   }]);
-  //   setForm({ categorie: "Transport", description: "", montant: "", mois: "4", annee: "2026", date: "", note: "" });
-  //   setModalOpen(false);
-  // };
+  const ajouterCharge = async () => {
+    if (!form.montant || !form.description) return;
+    setLoading(true)
+    // form.clientId = "OTHER"
+    const data = {
+      ...form,
+      // id: Date.now(),
+      montant: parseInt(form.montant),
+      // mois: parseInt(form.mois),
+      // annee: parseInt(form.annee),
+      // date: form.date ,
+    };
 
-  const supprimerCharge = (id: number) => setCharges(prev => prev.filter(c => c.id !== id));
+
+    const rs = await fetch("/api/charge-bureau", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    })
+    if (!rs.ok) return toast.error(`Error d'enregistrement`)
+
+    const rsp = await rs.json()
+
+    console.log(rsp)
+    setCharges(prev => [...prev, { ...rsp.data }]);
+    setForm({ payement: "Transport", description: "", montant: "", mois: (new Date()).toISOString().slice(0, 7), annee: String(new Date().getFullYear()), date: "", note: "", clientId: "OTHER", type: "decaissement", payment_method: "ESPECE" });
+    setLoading(false)
+    setModalOpen(false);
+  };
+
+  const supprimerCharge = async (id: number) => {
+
+    await fetch("/api/charge-bureau/" + id, {
+      method: "DELETE",
+    })
+    setCharges(prev => prev.filter(c => c.id !== id))
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6 font-sans">
@@ -213,7 +249,7 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
           <Badge variant="outline" className="text-slate-600 font-semibold text-sm px-3 py-1">
             Total : {fmt(totalGeneral)}
           </Badge>
-          {/* <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
               <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl">
                 + Ajouter une charge
@@ -226,42 +262,84 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
               <div className="space-y-3 mt-2">
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Catégorie</label>
-                  <Select value={form.categorie} onValueChange={v => setForm(f => ({...f, categorie: v}))}>
+                  <Select value={form.payement} onValueChange={v => setForm(f => ({ ...f, payement: v }))}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{CAT_ICONS[c]} {c}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <label className="text-xs text-slate-500 mb-1 block">Description</label>
-                  <Input className="rounded-xl" placeholder="ex: Facture Orange Money" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} />
+                  <Input className="rounded-xl" placeholder="ex: Facture Orange Money" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-slate-500 mb-1 block">Montant (FCFA)</label>
-                    <Input className="rounded-xl" type="number" placeholder="ex: 25000" value={form.montant} onChange={e => setForm(f => ({...f, montant: e.target.value}))} />
+                    <Input className="rounded-xl" type="number" placeholder="ex: 25000" value={form.montant} onChange={e => setForm(f => ({ ...f, montant: e.target.value }))} />
                   </div>
                   <div>
                     <label className="text-xs text-slate-500 mb-1 block">Mois</label>
-                    <Select value={form.mois} onValueChange={v => setForm(f => ({...f, mois: v}))}>
-                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>{MOIS.map((m,i) => <SelectItem key={i} value={String(i+1)}>{m}</SelectItem>)}</SelectContent>
+                    <Select value={form.mois} onValueChange={v => setForm(f => ({ ...f, mois: v }))}>
+                      <SelectTrigger className="w-full rounded-xl"><SelectValue placeholder="Select Mois" /></SelectTrigger>
+                      <SelectContent  >
+                        {
+                          getMonthsUntilNow(new Date().getFullYear()).map(mounth => (
+                            <SelectItem value={mounth.value}>{mounth.label}</SelectItem>
+                          ))
+                        }
+                        {/* {MOIS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)} */}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {
+                    form.payement === "Salaire" && (
+                      <div >
+                        <label className="text-xs text-slate-500 mb-1 block">Employers</label>
+                        <Select name="employe" >
+                          <SelectTrigger className="w-full rounded-xl">
+                            <SelectValue placeholder="Select Employers" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Select Employers</SelectLabel>
+                              {employes.map(employe => <SelectItem key={employe.id} value={employe.name}>{employe.name}</SelectItem>)}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )
+                  }
+
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">Date</label>
+                    <Input className="rounded-xl" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
+                  </div>
+                  <div >
+                    <label className="text-xs text-slate-500 mb-1 block">Method Paiement</label>
+                    <Select defaultValue="ESPECE" onValueChange={v => setForm(f => ({ ...f, payment_method: v }))}>
+                      <SelectTrigger className="w-full rounded-xl">
+                        <SelectValue placeholder="Select Payement Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Method de paiement</SelectLabel>
+                          <SelectItem value="ESPECE">ESPECE</SelectItem>
+                          <SelectItem value="ORANGE MONEY">ORANGE MONEY</SelectItem>
+                          <SelectItem value="WAVE">WAVE</SelectItem>
+                          <SelectItem value="CHEQUE">CHEQUE</SelectItem>
+                          <SelectItem value="VIREMENT">VIREMENT</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Date</label>
-                  <Input className="rounded-xl" type="date" value={form.date} onChange={e => setForm(f => ({...f, date: e.target.value}))} />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-500 mb-1 block">Note (optionnel)</label>
-                  <Input className="rounded-xl" placeholder="Commentaire..." value={form.note} onChange={e => setForm(f => ({...f, note: e.target.value}))} />
-                </div>
-                <Button onClick={ajouterCharge} className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl mt-2">
-                  Enregistrer
+
+
+                <Button onClick={ajouterCharge} className="w-full flex justify-center items-center bg-slate-900 hover:bg-slate-800 text-white rounded-xl mt-2">
+                  {loading ? <Spinner /> : "Enregistrer"}
                 </Button>
               </div>
             </DialogContent>
-          </Dialog> */}
+          </Dialog>
         </div>
       </div>
 
@@ -345,7 +423,7 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
       {/* ── Catégorie Progress Bars ── */}
       <Card className="rounded-2xl border-slate-100 shadow-sm mb-6">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-slate-700">Détail par catégorie — {MOIS[parseInt(moisVue) - 1]}</CardTitle>
+          <CardTitle className="text-sm font-semibold text-slate-700">Détail par catégorie — {new Date(moisVue).toLocaleDateString("fr-FR", { month: "long" })}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -431,7 +509,7 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
                         <span className="text-sm font-medium text-slate-700">{CAT_ICONS[c.payement]} {c.payement}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-500 max-w-[200px] truncate">{c.payement === "Salaire" ? c.employe : c.libelle}</TableCell>
+                    <TableCell className="text-sm text-slate-500 max-w-[200px] truncate">{c.payement === "Salaire" ? c.employe : c.libelle || c.description}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs font-medium rounded-lg" style={{ color: CAT_COLORS[c.payement], borderColor: CAT_COLORS[c.payement] + "40", background: CAT_COLORS[c.payement] + "10" }}>
                         {/* {MOIS[c.mois - 1]} */}
