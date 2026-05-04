@@ -237,7 +237,6 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6 font-sans">
-      {/* <style>{`@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap'); * { font-family: 'Sora', sans-serif; }`}</style> */}
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">

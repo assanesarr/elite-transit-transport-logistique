@@ -7,14 +7,13 @@ import {
     IconDashboard,
     IconDatabase,
     IconFileAi,
+    IconFileCheckFilled,
     IconFileDescription,
     IconFileWord,
     IconFolder,
-    IconHelp,
     IconInnerShadowTop,
     IconListDetails,
     IconReport,
-    IconSearch,
     IconSettings,
     IconUsers,
 } from "@tabler/icons-react"
@@ -62,11 +61,11 @@ const data = {
           icon: IconChartBar,
           items: []
         },
-        // {
-        //   title: "Projects",
-        //   url: "#",
-        //   icon: IconFolder,
-        // },
+        {
+          title: "Suivi des chèques",
+          url: "/dashboard/suivi-cheques",
+          icon: IconFileCheckFilled,
+        },
         
     ],
     navClouds: [
