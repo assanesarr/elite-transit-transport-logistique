@@ -277,7 +277,7 @@ export const fmtDT = (d: any) => d ? new Date(d).toLocaleString("fr-SN", { day: 
 // export const totalPaye = (d: Dossier) => d.versement.reduce((s, p) => s + p.montant, 0);
 export const resteApayer = (d: Dossier) => d.montant_total - totalPaye(d);
 export const tauxPaiement = (d: Dossier) => d.montant_total ? Math.round((totalPaye(d) / d.montant_total) * 100) : 0;
-export const totalDecaisse = (d: Dossier) => (d.payements || []).reduce((s, x) => s + x.montant, 0);
+export const totalDecaisse = (d: Dossier) => (d.payements || []).reduce((s, x) => s + Number(x.montant), 0);
 export const soldeDecaisse = (d: Dossier) => totalPaye(d) - totalDecaisse(d);
 export const getCatDecaiss = (key: string) => CATEGORIES_DECAISSEMENT.find(c => c.key === key) || { label: key, icon: "💸", color: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200" };
 
