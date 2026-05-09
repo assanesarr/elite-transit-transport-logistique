@@ -37,7 +37,7 @@ export default function TrasDossier(
 
     return (
         <AlertDialog >
-            <AlertDialogTrigger className="flex items-center" >
+            <AlertDialogTrigger className="flex items-center" onClick={(e) => {e.stopPropagation()}}>
                 <IconTrash className="text-red-500 hover:text-red-700 print:hidden" size={12} />
                 {/* Supprimer le document */}
             </AlertDialogTrigger>

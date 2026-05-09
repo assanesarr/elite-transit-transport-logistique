@@ -1,12 +1,25 @@
 "use client"
 
 import FooterUser from "./user-footer";
-import { IconChevronLeft, IconChevronRight, IconChevronsLeft, IconChevronsRight, IconCircleCheckFilled, IconLoader, IconPencil } from "@tabler/icons-react";
+import {
+    IconChevronLeft,
+    IconChevronRight,
+    IconChevronsLeft,
+    IconChevronsRight,
+    IconCircleCheckFilled,
+    IconLoader,
+    IconPencil,
+    IconFileText,
+    IconFolder,
+    IconFolderOpen,
+    IconFileDescription
+} from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import TrashComponent from "./trash";
-import { useId, useState } from "react";
+import { useId, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, generateFileName } from "@/lib/utils";
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable } from "@tanstack/react-table";
 import jsPDF from "jspdf";
@@ -33,27 +46,93 @@ export type User = {
     dossiers: any[];
 };
 
+// Composant pour l'avatar avec les initiales
+export const UserAvatar = ({ name, avatar, dossiersCount }: { name: string; avatar: string; dossiersCount: number }) => {
+    const getInitials = (name: string) => {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    return (
+        <div className="flex items-center gap-3">
+            <div className="relative">
+                <Avatar className="h-10 w-10 ring-2 ring-slate-200 dark:ring-slate-700 transition-all hover:ring-slate-400">
+                    <AvatarImage src={avatar} alt={name} />
+                    <AvatarFallback className="bg-linear-to-br from-slate-500 to-slate-600 text-white text-sm">
+                        {getInitials(name)}
+                    </AvatarFallback>
+                </Avatar>
+
+                {/* Badge pour le nombre de dossiers sur l'avatar */}
+                {dossiersCount > 0 && (
+                    <div className="absolute -bottom-1 -right-1">
+                        <div className="flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold shadow-sm border-2 border-white dark:border-gray-800">
+                            {dossiersCount}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <div className="flex flex-col">
+                <span className="font-medium text-gray-900 dark:text-gray-100">{name}</span>
+                <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                    <IconFolderOpen className="h-3 w-3" />
+                    <span>{dossiersCount} dossier{dossiersCount > 1 ? 's' : ''}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Composant pour le compteur de dossiers stylisé
+const DossiersCounter = ({ count }: { count: number }) => {
+    if (count === 0) return null;
+
+    return (
+        <div className="flex items-center gap-1.5">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${count > 5
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                    : count > 2
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                }`}>
+                <IconFileDescription className={`h-3 w-3 ${count > 5 ? 'text-orange-500' : 'text-blue-500'
+                    }`} />
+                <span className="font-semibold">{count}</span>
+                <span className="hidden sm:inline">dossier{count > 1 ? 's' : ''}</span>
+            </div>
+        </div>
+    );
+};
+
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
 }
 
 export default function CardUser() {
-
     const clients = useClientsStore((state) => state.clients)
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-        []
-    )
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [sorting, setSorting] = useState<SortingState>([])
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: 10,
     })
 
+    // Calcul des statistiques globales
 
+    const stats = useMemo(() => {
+        const totalClients = clients.length;
+        const totalDossiers = clients.reduce((sum, client) => sum + client.dossiers.length, 0);
+        const totalMontant = clients.reduce((sum, client) =>
+            sum + client.dossiers.reduce((s, d) => s + Number(d.montant_total || 0), 0), 0);
 
+        return { totalClients, totalDossiers, totalMontant };
+    }, [clients]);
     const exportTablePDF = () => {
-        // const doc = new jsPDF({ orientation: "landscape" });
         const doc = new jsPDF({
             orientation: "portrait",
             unit: "mm",
@@ -62,7 +141,6 @@ export default function CardUser() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
 
-        // ── Config ───────────────────────────────────────────────
         const PRIMARY = "#2a6dd9";
         const pageW = doc.internal.pageSize.getWidth();
         const pageH = doc.internal.pageSize.getHeight();
@@ -70,14 +148,11 @@ export default function CardUser() {
         const headerH = 26;
         const footerH = 12;
 
-        // ── Helpers en-tête / pied de page ───────────────────────
         function enTete() {
-            // Ligne bleue de séparation
             doc.setDrawColor(PRIMARY);
             doc.setLineWidth(0.6);
             doc.line(marginX, headerH, pageW - marginX, headerH);
 
-            // Logo
             doc.setFillColor(PRIMARY);
             doc.roundedRect(marginX, 7, 13, 13, 2, 2, "F");
             doc.setTextColor("#ffffff");
@@ -85,7 +160,6 @@ export default function CardUser() {
             doc.setFontSize(14);
             doc.text("E", marginX + 6.5, 15.5, { align: "center" });
 
-            // Nom + slogan
             doc.setTextColor(PRIMARY);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(12);
@@ -101,8 +175,6 @@ export default function CardUser() {
             doc.text("Tel: +221 33 822 48 67 / Email: elitetransit16@gmail.com",
                 marginX + 16, 22.5);
 
-
-            // Titre doc + date (droite)
             doc.setTextColor("#333333");
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
@@ -116,6 +188,12 @@ export default function CardUser() {
                 { day: "2-digit", month: "long", year: "numeric" });
             doc.text("Généré le " + date,
                 pageW - marginX, 18.5, { align: "right" });
+
+            // Ajout des stats dans le PDF
+            doc.setFontSize(8);
+            doc.setTextColor(PRIMARY);
+            doc.text(`Total Clients: ${stats.totalClients} | Total Dossiers: ${stats.totalDossiers} | Montant Total: ${new Intl.NumberFormat("fr-FR").format(stats.totalMontant)} FCFA`,
+                marginX, headerH + 5);
         }
 
         function piedDePage(data: any) {
@@ -138,8 +216,6 @@ export default function CardUser() {
                 pageW - marginX, pageH - 5, { align: "right" });
         }
 
-
-
         const headers = columns
             .filter((col) => 'accessorKey' in col && col.accessorKey !== "actions")
             .map((col) => 'header' in col ? col.header : "");
@@ -159,6 +235,7 @@ export default function CardUser() {
 
             return [
                 client.name,
+                `${client.dossiers.length} dossier(s)`,
                 statut,
                 versements,
                 total,
@@ -166,41 +243,17 @@ export default function CardUser() {
             ];
         });
 
-        // // 👉 HEADER
-        // const addHeader = () => {
-        //     doc.setFontSize(12);
-        //     doc.text("ELITE TRANSIT TRANSPORT LOGISTIQUE - RAPPORT CLIENTS", 14, 15);
-        //     doc.setFontSize(10);
-        //     doc.text(`Date: ${new Date().toLocaleDateString("fr-FR")}`, pageWidth - 60, 15);
-        // };
-
-        // // 👉 FOOTER
-        // const addFooter = (pageNumber: number) => {
-        //     doc.setFontSize(10);
-        //     doc.text(
-        //         `Page ${pageNumber}`,
-        //         pageWidth / 2,
-        //         pageHeight - 10,
-        //         { align: "center" }
-        //     );
-        // };
-
-        // ── Titre au-dessus du tableau ────────────────────────────
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.setTextColor(PRIMARY);
         doc.text("Récapitulatif des Clients",
-            marginX, headerH + 10);
-
+            marginX, headerH + 14);
 
         autoTable(doc, {
-            head: [headers as string[]],
+            head: [["Nom", "Dossiers", "Statut", "Versements", "Net à Payer", "Restant"]],
             body: rows,
-
-            startY: headerH + 14,        // départ sous l'en-tête
+            startY: headerH + 20,
             margin: { left: marginX, right: marginX },
-
-            // ── Style global ─────────────────────────────────────
             styles: {
                 font: "helvetica",
                 fontSize: 9,
@@ -208,59 +261,27 @@ export default function CardUser() {
                 lineColor: "#dddddd",
                 lineWidth: 0.2,
             },
-            // ── En-tête du tableau ────────────────────────────────
             headStyles: {
                 fillColor: PRIMARY,
                 textColor: "#ffffff",
                 fontStyle: "bold",
                 halign: "left",
             },
-
-            // ── Lignes alternées (zèbre) ──────────────────────────
             alternateRowStyles: {
                 fillColor: "#f0f5ff",
             },
-
-            // ── Pied du tableau (ligne de total) ──────────────────
-            // foot: [["", "", "", "Total", "1 833 000 FCFA", "1 833 000 FCFA", ""]],
-            // footStyles: {
-            //     fillColor: "#e6f1fb",
-            //     textColor: PRIMARY,
-            //     fontStyle: "bold",
-            // },
-            // showFoot: "lastPage",
-
-            // ── Colonnes : largeurs individuelles ─────────────────
-            // columnStyles: {
-            //     0: { cellWidth: 12, halign: "center" },  // #
-            //     3: { cellWidth: 10, halign: "center" },  // Qté
-            //     4: { cellWidth: 28, halign: "right" },  // P.U.
-            //     5: { cellWidth: 30, halign: "right" },  // Total
-            //     6: { cellWidth: 24, halign: "center" },  // Statut
-            // },
-
-            // ── Colorier les cellules "Statut" ────────────────────
             didParseCell(data) {
-                if (data.section === "body" && data.column.index === 1) {
+                if (data.section === "body" && data.column.index === 2) {
                     const v = data.cell.raw;
                     if (v === "Payé") data.cell.styles.textColor = "#438f0d";
                     if (v === "En cours") data.cell.styles.textColor = "#c70c0c";
                     if (v === "Nouveau") data.cell.styles.textColor = "#e8810c";
                 }
             },
-
-            // ── En-tête + pied de page sur chaque page ────────────
             didDrawPage(data) {
                 enTete();
                 piedDePage(data);
             },
-            // 👉 HEADER sur chaque page
-            // didDrawPage: () => {
-            //     // addHeader();
-            //     dessinerEnTete(pageNumber);
-            //     dessinerPiedDePage(pageNumber);
-            //     pageNumber++;
-            // },
         });
 
         doc.save(generateFileName());
@@ -269,75 +290,109 @@ export default function CardUser() {
     const columns: ColumnDef<any>[] = [
         {
             accessorKey: "name",
-            header: "Name",
+            header: "Client & Dossiers",
             cell: ({ row }) => {
+
                 return (
-                    <FooterUser user={row.original} docs={row.original.dossiers} />
+                    <div className="flex items-center justify-between w-full">
+                        <FooterUser user={row.original} docs={row.original.dossiers} />
+                    </div>
                 )
+            }
+        },
+        {
+            accessorKey: "dossiers_count",
+            header: "Dossiers",
+            cell: ({ row }) => {
+                const dossiersCount = row.original.dossiers?.length || 0;
+                return <DossiersCounter count={dossiersCount} />
             }
         },
         {
             accessorKey: "status",
             header: "Statut",
             cell: ({ row }) => {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total), 0)
+                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
                 const totalVersement = row.original.dossiers
-                    .flatMap((d: any) => d.versement)
-                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant), 0);
+                    .flatMap((d: any) => d.versement || [])
+                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
                 const result = totalMontant - totalVersement
 
+                if (totalMontant === 0 && totalVersement === 0) {
+                    return (
+                        <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800">
+                            <IconFolder className="h-3 w-3 mr-1" />
+                            Nouveau
+                        </Badge>
+                    )
+                }
+
                 return (
-                    totalMontant === 0 && totalVersement === 0 ? (<Badge variant="outline" className="bg-orange-300 text-amber-50">Nouveau</Badge>) :
-                        (
-                            <Badge variant="outline" className={cn("", result <= 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-600 text-white dark:bg-red-600 dark:text-white")}>
-                                {result <= 0 ? (
-                                    <><IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" /> PAYÉ</>
-                                ) : (
-                                    <><IconLoader />En cours</>
-                                )}
-                            </Badge>
-                        )
+                    <Badge variant="outline" className={cn(
+                        "gap-1",
+                        result <= 0
+                            ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+                            : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800"
+                    )}>
+                        {result <= 0 ? (
+                            <>
+                                <IconCircleCheckFilled className="h-3 w-3 fill-green-500 dark:fill-green-400" />
+                                PAYÉ
+                            </>
+                        ) : (
+                            <>
+                                <IconLoader className="h-3 w-3 animate-spin" />
+                                En cours
+                            </>
+                        )}
+                    </Badge>
                 )
             }
         },
         {
             accessorKey: "versement",
-            header: "Versement",
+            header: "Versements",
             cell({ row }) {
                 const total = row.original.dossiers
-                    .flatMap((d: any) => d.versement)
-                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant), 0);
+                    .flatMap((d: any) => d.versement || [])
+                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
 
-                // console.log("total versement =>", total)
-
-                return new Intl.NumberFormat("fr-FR").format(total)
-
+                return (
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {new Intl.NumberFormat("fr-FR").format(total)} FCFA
+                    </span>
+                )
             },
         },
         {
             accessorKey: "netpaye",
-            header: "Net A Payer",
+            header: "Net à Payer",
             cell({ row }) {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total), 0)
-                return new Intl.NumberFormat("fr-FR").format(totalMontant)
+                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
+                return (
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {new Intl.NumberFormat("fr-FR").format(totalMontant)} FCFA
+                    </span>
+                )
             },
         },
         {
             accessorKey: "restant",
-            header: "Restant",
+            header: "Reste à Payer",
             cell({ row }) {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total), 0)
+                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
                 const totalVersement = row.original.dossiers
-                    .flatMap((d: any) => d.versement)
-                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant), 0);
+                    .flatMap((d: any) => d.versement || [])
+                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
                 const result = totalMontant - totalVersement
+
                 return (
-                    <div >
-                        {/* className={
-                            cn("font-bold", result > 0 ? "text-red-500 " : "text-green-500")
-                        } */}
-                        {new Intl.NumberFormat("fr-FR").format(result)}
-                    </div>
+                    <span className={cn(
+                        "font-bold",
+                        result > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                    )}>
+                        {new Intl.NumberFormat("fr-FR").format(result)} FCFA
+                    </span>
                 )
             },
         },
@@ -345,7 +400,11 @@ export default function CardUser() {
             accessorKey: "actions",
             header: "Actions",
             cell({ row }) {
-                return <TrashComponent user={row.original} />
+                return (
+                    <div className="flex items-center gap-1">
+                        <TrashComponent user={row.original} />
+                    </div>
+                )
             },
         },
     ]
@@ -366,30 +425,37 @@ export default function CardUser() {
         },
     })
 
+
+
     return (
-        <div className="p-2 w-full">
-            <div className="flex items-center py-4">
+        <div className="p-4 w-full space-y-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4 py-4">
                 <Input
-                    placeholder="Filter nom..."
+                    placeholder="Rechercher par nom..."
                     value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
                     onChange={(event) =>
                         table.getColumn("name")?.setFilterValue(event.target.value)
                     }
                     className="max-w-sm"
                 />
-                <Button variant="outline" className="ml-2" onClick={() => exportTablePDF()} >
+                <Button
+                    variant="outline"
+                    className="ml-auto gap-2 bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-0"
+                    onClick={() => exportTablePDF()}
+                >
+                    <IconFileText className="h-4 w-4" />
                     Export PDF
                 </Button>
             </div>
-            <div className="overflow-hidden rounded-md border w-full">
 
+            <div className="overflow-hidden rounded-lg border shadow-sm w-full">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-gray-50 dark:bg-gray-900">
                         {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
+                            <TableRow key={headerGroup.id} className="hover:bg-transparent">
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id}>
+                                        <TableHead key={header.id} className="font-semibold">
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
@@ -408,9 +474,10 @@ export default function CardUser() {
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
                                 >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} >
+                                        <TableCell key={cell.id} className="py-3">
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </TableCell>
                                     ))}
@@ -419,58 +486,63 @@ export default function CardUser() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
+                                    Aucun résultat trouvé.
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex w-full items-center gap-8 lg:w-fit p-2">
-                <div className="flex w-fit items-center justify-center text-sm font-medium">
-                    Page {table.getState().pagination.pageIndex + 1} of{" "}
-                    {table.getPageCount()}
+
+            <div className="flex flex-col sm:flex-row w-full items-center justify-between gap-4 p-2">
+                <div className="text-sm text-gray-500">
+                    Affichage de {table.getRowModel().rows.length} sur {clients.length} clients
                 </div>
-                <div className="ml-auto flex items-center gap-2 lg:ml-0">
-                    <Button
-                        variant="outline"
-                        className="hidden h-8 w-8 p-0 lg:flex"
-                        onClick={() => table.setPageIndex(0)}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        <span className="sr-only">Go to first page</span>
-                        <IconChevronsLeft />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="size-8"
-                        size="icon"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                    >
-                        <span className="sr-only">Go to previous page</span>
-                        <IconChevronLeft />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="size-8"
-                        size="icon"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        <span className="sr-only">Go to next page</span>
-                        <IconChevronRight />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="hidden size-8 lg:flex"
-                        size="icon"
-                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                        disabled={!table.getCanNextPage()}
-                    >
-                        <span className="sr-only">Go to last page</span>
-                        <IconChevronsRight />
-                    </Button>
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center text-sm font-medium">
+                        Page {table.getState().pagination.pageIndex + 1} sur {table.getPageCount()}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            className="hidden h-8 w-8 p-0 lg:flex"
+                            onClick={() => table.setPageIndex(0)}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <span className="sr-only">Première page</span>
+                            <IconChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            size="icon"
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
+                        >
+                            <span className="sr-only">Page précédente</span>
+                            <IconChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            size="icon"
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <span className="sr-only">Page suivante</span>
+                            <IconChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="hidden h-8 w-8 p-0 lg:flex"
+                            size="icon"
+                            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                            disabled={!table.getCanNextPage()}
+                        >
+                            <span className="sr-only">Dernière page</span>
+                            <IconChevronsRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>

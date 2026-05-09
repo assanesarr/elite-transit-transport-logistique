@@ -1,4 +1,7 @@
+import { CATEGORIES_DECAISSEMENT } from "@/app/data";
+import { Dossier } from "@/app/type";
 import { clsx, type ClassValue } from "clsx"
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -12,6 +15,24 @@ export function formatDate(date: Date, local = "en-US"): string {
     day: "numeric",
   })
 }
+
+export async function Commit(url: string, saved: any, method?: string) {
+  if (!url) return //"/api/users"
+  const res = await fetch(url + (saved.id ? `/${saved.id}` : ""), {
+    method: method ? method : (saved.id ? "PUT" : "POST"),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...saved }),
+  })
+  if (!res.ok) {
+    const errorData = await res.json();
+    const errorMessage = errorData?.message || "Une erreur est survenue lors de l'enregistrement du personnel.";
+    toast.error(errorMessage);
+  }
+  return await res.json();
+}
+
+
+
 export const generateFileName = () => {
   const now = new Date();
 
@@ -236,3 +257,79 @@ export const getNextNumero = (dossiers: any[]) => {
 
   return `DOS-${currentYear}-${next}`;
 };
+
+export const totalPaye = (dossier: Dossier): number => {
+  if (!dossier.versement || dossier.versement.length === 0) {
+    return 0;
+  }
+  
+  return dossier.versement.reduce((total, vers) => {
+    return total + (vers.montant || 0);
+  }, 0);
+};
+
+export const fmt = (n: number | string) => Number(n).toLocaleString("fr-FR") + " FCFA";
+export const fmtM = (n: number) => (n >= 1000000 ? (n / 1000000).toFixed(2) + " M" : (n / 1000).toFixed(0) + "k") + " FCFA";
+export const initials = (s: string) => s.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+export const today = new Date().toISOString().split("T")[0];
+export const fmtDT = (d: any) => d ? new Date(d).toLocaleString("fr-SN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+
+// export const totalPaye = (d: Dossier) => d.versement.reduce((s, p) => s + p.montant, 0);
+export const resteApayer = (d: Dossier) => d.montant_total - totalPaye(d);
+export const tauxPaiement = (d: Dossier) => d.montant_total ? Math.round((totalPaye(d) / d.montant_total) * 100) : 0;
+export const totalDecaisse = (d: Dossier) => (d.payements || []).reduce((s, x) => s + x.montant, 0);
+export const soldeDecaisse = (d: Dossier) => totalPaye(d) - totalDecaisse(d);
+export const getCatDecaiss = (key: string) => CATEGORIES_DECAISSEMENT.find(c => c.key === key) || { label: key, icon: "💸", color: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200" };
+
+export const isDossierSolde = (d: Dossier): boolean => {
+  const totalPaiements = d.versement.reduce(
+    (sum, p) => sum + p.montant,
+    0
+  );
+
+  const isSold = totalPaiements >= d.montant_total
+  // const isValidStatus = ["cloture", "nouveau", "annule"].includes(d.statut)
+
+  return isSold;
+};
+
+type BLResult = {
+  valid: boolean;
+  formatted: string | undefined;
+  error?: string;
+};
+
+/**
+ * Valide et formate un numéro de Bill of Lading
+ */
+export function formatBLNumber(input: string): BLResult {
+  if (!input) {
+    return { valid: false, formatted: undefined, error: "Numéro vide" };
+  }
+
+  // Nettoyage (espaces, majuscules)
+  const cleaned = input.trim().toUpperCase();
+
+  // Regex : 4 lettres + 8 à 12 chiffres
+  const regex = /^[A-Z]{4}\d{8,12}$/;
+
+  if (!regex.test(cleaned)) {
+    return {
+      valid: false,
+      formatted: cleaned,
+      error: "Format invalide. Exemple attendu: MSCU123456789",
+    };
+  }
+
+  // Extraction des parties
+  const prefix = cleaned.slice(0, 4);
+  const number = cleaned.slice(4);
+
+  // Formatage lisible (optionnel)
+  const formatted = `${prefix}-${number}`;
+
+  return {
+    valid: true,
+    formatted,
+  };
+}

@@ -10,7 +10,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
-import { DialogSaisis } from "@/components/saisis-form"
+import { DialogSaisis } from "@/components/saisi-form"
+import AddNewdossier from "@/components/addNewdossier"
 
 export function NavMain({
   items,
@@ -29,7 +30,8 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <DialogSaisis  />
+            <AddNewdossier />
+            {/* <DialogSaisis  /> */}
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>

@@ -15,10 +15,10 @@ export default async function DashboardLayout({
     children: React.ReactNode;
 }>) {
     const user = (await auth())?.user;
-    // const clinets = await adminDb.collection("clients").orderBy("createdAt").get()
-    //     .then((snapshot) => {
-    //         return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    //     }) as any[];
+    const dossiers = await adminDb.collection("dossiers").orderBy("createdAt").get()
+        .then((snapshot) => {
+            return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        }) as any[];
 
     const clinets = await adminDb.collection("clients").orderBy("createdAt", "desc").get()
         .then(async (snapshot) => {
@@ -34,7 +34,7 @@ export default async function DashboardLayout({
         .then((snapshot) => {
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         }) as any[];
-        
+
     const employes = await adminDb.collection("users").where("role", "==", "EMPLOYE").get()
         .then((snapshot) => {
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -70,6 +70,7 @@ export default async function DashboardLayout({
                 clients={clinets}
                 agents={agents}
                 employes={employes}
+                dossiers={dossiers}
             >
                 <AppSidebar variant="inset" />
                 <SidebarInset>

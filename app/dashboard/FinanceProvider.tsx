@@ -6,22 +6,30 @@ import { useAppStore } from "@/store/useAppStore"
 import { User } from "./clients/components/card-user"
 import { useClientsStore } from "@/store/clientStore"
 import { useAgentsStore } from "@/store/agentStore"
-import { EMPLOYE } from "../type"
+import { Dossier, EMPLOYE } from "../type"
 import { useEmployesStore } from "@/store/useEmployesStore"
+import { useDossiersStore } from "@/store/useDossiersStore"
+import EncaissementDialog from "@/components/EncaissementDialog"
+import { useModalStore } from "@/store/modal/paiement"
+import { AlertDialogView } from '@/components/alertDialogView';
+import AddDecaissement from '@/components/addDecaissement'
 
-export default function FinanceProvider({ 
-  children, 
-  initialData, 
+export default function FinanceProvider({
+  children,
+  initialData,
   user,
   clients,
   agents,
-  employes
- }: { children: React.ReactNode, initialData: any[], user: any, clients?: any[], agents?: any[], employes?: EMPLOYE[] }) {
+  employes,
+  dossiers
+}: { children: React.ReactNode, initialData: any[], user: any, clients?: any[], agents?: any[], employes?: EMPLOYE[], dossiers: Dossier[] }) {
   const setMouvements = useFinanceStore((state) => state.setMouvements)
   const setUsers = useAppStore((state) => state.setUser)
   const setClients = useClientsStore((state) => state.setClients)
   const setAgents = useAgentsStore((state) => state.setAgents)
   const setEmployes = useEmployesStore((state) => state.setEmployes)
+  const setDossiers = useDossiersStore(s => s.setDossiers)
+  const {isOpen, close} = useModalStore()
 
   useEffect(() => {
     setMouvements(initialData)
@@ -34,10 +42,22 @@ export default function FinanceProvider({
     if (agents) {
       setAgents(agents)
     }
-    if(employes){
+    if (employes) {
       setEmployes(employes)
     }
-  }, [initialData, user, employes])
+    if (dossiers) {
+      setDossiers(dossiers)
+    }
+  }, [initialData, user, employes, dossiers])
 
-  return <>{children}</>
+  return <>
+    {children}
+    <EncaissementDialog
+      open={isOpen}
+      onOpenChange={close}
+      // onSuccess={handleSuccess}
+    />
+    <AddDecaissement />
+       <AlertDialogView />
+  </>
 }

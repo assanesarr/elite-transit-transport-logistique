@@ -9,20 +9,47 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useEffect, useState } from "react";
 import TrashBtn from "./trash-btn";
 import TrashDossier from "./trash-dossier";
-import { BadgeCheckIcon, Divide, Folder, Folders, Printer } from "lucide-react";
+import { ArrowLeft, BadgeCheckIcon, Divide, Folder, Folders, Printer } from "lucide-react";
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { Separator } from "@/components/ui/separator";
-import { IconTrash } from "@tabler/icons-react";
+import { IconCircleCheckFilled, IconLoader, IconTrash } from "@tabler/icons-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, Commit, fmt, formatBLNumber, formatDate, getCatDecaiss, isDossierSolde, resteApayer, soldeDecaisse, tauxPaiement, totalDecaisse, totalPaye } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dossier } from "@/app/type";
+import { useClientsStore } from "@/store/clientStore";
+import { CATEGORIES_DECAISSEMENT, STATUTS_DOSSIER } from "@/app/data";
+import { AvatarCircle } from "../../components/helpers-components";
+import { useModalStore } from "@/store/modal/paiement";
+import { useModalDecaissementStore } from "@/store/modal/decaissement";
+import { useAlertStore } from "@/store/alertStore";
+import { printFacture } from "@/components/FacturePDF";
+import { entreprise } from "@/app/data"
+import { useRouter } from "next/navigation";
+import { UserAvatar } from "./card-user";
 
-
+type ViewType = "main" | "details";
 
 export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
-
+    const [currentView, setCurrentView] = useState<ViewType>("main");
     const isMobile = useIsMobile();
     const [dossiers, setDossiers] = useState<any[]>(docs)
+    const [dossier, setDossier] = useState(null)
+    const dossiersCount = docs?.length || 0;
+
+
+    // Navigation entre les vues
+    const navigateTo = (view: ViewType, d?: any) => {
+        if (!d) return
+        setDossier(d)
+        setCurrentView(view);
+    };
+
+    const goBack = () => {
+        setCurrentView("main");
+    };
+
 
     useEffect(() => {
         setDossiers(docs)
@@ -32,191 +59,52 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
 
     return (
         <Drawer direction={isMobile ? "bottom" : "right"} >
-            <DrawerTrigger asChild>
-                <Button variant="ghost" className="flex gap-1 hover:underline  w-fit px-0 text-left capitalize">
-                    <span className="flex font-bold"><Folders /> {user.name}</span>
-                    <span className="text-xs"> ({dossiers.length} Dossier{dossiers.length > 1 && "s"})</span>
-                </Button>
+            <DrawerTrigger className="cursor-pointer">
+                <UserAvatar
+                    name={user.name}
+                    avatar={user.avatar}
+                    dossiersCount={dossiersCount}
+                />
             </DrawerTrigger>
-            <DrawerContent className="data-[vaul-drawer-direction=right]:sm:max-w-xl">
-                <DrawerHeader className="gap-1">
-                    <DrawerTitle className="text-xl font-bold">{user.name}</DrawerTitle>
-                    <DrawerDescription>{dossiers.length} Dossier{dossiers.length > 1 && "s"}</DrawerDescription>
+            <DrawerContent className="data-[vaul-drawer-direction=right]:sm:max-w-4xl">
+                <DrawerHeader className="">
+                    <DrawerTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <AvatarCircle name={user?.name || "?"} idx={2} />
+                            <div>
+                                <p className="font-semibold">{user?.name}</p>
+                                <p className="text-slate-400 text-xs">{user?.phone}</p>
+                            </div>
+                        </div>
+
+                        {currentView !== "main" ? (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={goBack}
+                                className="mb-2 -ml-2"
+                            >
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Retour
+                            </Button>
+                        ) : (
+                            <DrawerDescription>{dossiers.length} Dossier{dossiers.length > 1 && "s"}</DrawerDescription>
+                        )}
+                    </DrawerTitle>
                 </DrawerHeader>
-                <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-                    <h1 className="text-xl font-bold">Encaissement </h1>
-                    <Accordion type="single" collapsible >
+                {currentView === "main" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 px-4">
                         {
-                            dossiers.length === 0 ? (
-                                <p>No dossiers found for this client.</p>
-                            ) :
-                                dossiers.map((dossier: any, index: number) => {
-                                    const totalVersement = dossier.versement.reduce((sum: number, v: any) => Number(sum) + (Number(v.montant) || 0), 0);
-
-                                    return (
-                                        <AccordionItem key={index} value={`item-${index}`}>
-                                            <div className="flex gap-1 justify-between">
-                                                <TrashDossier dossierId={dossier.id} setDossiers={setDossiers} />
-                                                <AccordionTrigger>
-                                                    <Badge><Folder /> Dossier {dossier.dossierName}</Badge>
-                                                </AccordionTrigger>
-                                            </div>
-                                            <AccordionContent>
-
-                                                <Table>
-                                                    <TableCaption className="caption-top text-left font-semibold text-base mb-2">
-                                                        Dossier ref {dossier.reference}
-                                                    </TableCaption>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>Action</TableHead>
-                                                            <TableHead className="w-[100px]">Invoice</TableHead>
-                                                            <TableHead>Method</TableHead>
-                                                            <TableHead className="text-right">Amount</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {dossier.versement.map((versement: any, vIndex: number) => (
-                                                            <TableRow key={vIndex}>
-                                                                <TableCell>
-                                                                    <TrashBtn
-                                                                        dossierName={dossier.dossierName}
-                                                                        versementDate={versement.date}
-                                                                        setDossiers={setDossiers}
-                                                                    />
-                                                                </TableCell>
-                                                                <TableCell className="font-medium">{versement.invoice || `INV${String(vIndex + 1).padStart(3, '0')}`}</TableCell>
-                                                                <TableCell>{versement.payment_method}</TableCell>
-                                                                <TableCell className="text-right">{new Intl.NumberFormat("fr-FR").format(versement.montant || 0)}</TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                        <TableRow>
-                                                            <TableCell className="font-medium text-right" colSpan={3}>TOTAL ACOUNT:</TableCell>
-                                                            <TableCell className="text-right">
-                                                                {
-                                                                    totalVersement >= dossier.montant_total
-                                                                        ? (<Badge className="bg-green-500 text-white rounded-none">{new Intl.NumberFormat("fr-FR").format(totalVersement)}</Badge>)
-                                                                        : (<Badge className="bg-red-500 text-white rounded-none">{new Intl.NumberFormat("fr-FR").format(totalVersement)}</Badge>)
-                                                                }
-                                                            </TableCell>
-                                                        </TableRow>
-                                                        <TableRow>
-                                                            <TableCell className="font-medium text-right" colSpan={3}>NET A PAIE:</TableCell>
-                                                            <TableCell className="text-right">{new Intl.NumberFormat("fr-FR").format(dossier.montant_total)}</TableCell>
-                                                        </TableRow>
-
-                                                        <TableRow >
-                                                            <TableCell className="font-medium text-right" colSpan={3}>{(dossier.montant_total - totalVersement) <= 0 ? '' : 'Restes à payer:'}</TableCell>
-                                                            <TableCell className="text-right">{dossier.montant_total - totalVersement <= 0 ? (<Badge className="bg-green-600 text-white">PAYÉ</Badge>) : new Intl.NumberFormat("fr-FR").format(dossier.montant_total - totalVersement)}</TableCell>
-                                                        </TableRow>
-                                                    </TableBody>
-                                                </Table>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    )
-                                })
+                            dossiers.map((dossier: any, index: number) => (
+                                <GridDossier key={index} d={dossier} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
+                            ))
                         }
-
-                    </Accordion>
-                    <Separator />
-                    <h1 className="text-xl font-bold">Decaissement Paiements</h1>
-                    <div>
-                        <Accordion type="single" collapsible >
-                            {
-                                dossiers.length === 0 ? (
-                                    <p>No dossiers found for this client.</p>
-                                ) :
-                                    dossiers.map((dossier: any, index: number) => {
-                                        const totalVersement = dossier.versement.reduce((sum: number, v: any) => Number(sum) + (Number(v.montant) || 0), 0);
-                                        const totalPayement = dossier?.payements && dossier.payements.reduce((sum: number, p: any) => Number(sum) + (Number(p.montant) || 0), 0);
-                                        return (
-                                            <AccordionItem key={index} value={`item-${index}`}>
-                                                <AccordionTrigger >
-                                                    <div className="flex items-center gap-1"><Folder /> Dossier {dossier.dossierName}</div>
-                                                    <div className="font-bold">
-                                                        Versement   {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent  >
-                                                    {
-                                                        dossier.payements && dossier.payements.length > 0 ?
-                                                            <>
-                                                                {
-                                                                    dossier.payements.map((payement: any, pIndex: number) => (
-                                                                        <ContextMenu key={pIndex}>
-                                                                            <ContextMenuTrigger>
-                                                                                <Item variant="outline" size="sm" key={pIndex} onClick={() => { console.log("clicked...", dossier) }}>
-                                                                                    <ItemMedia>
-                                                                                        <BadgeCheckIcon className="size-5 text-green-500" />
-                                                                                    </ItemMedia>
-                                                                                    <ItemContent>
-                                                                                        <ItemTitle>{payement.payement}</ItemTitle>
-                                                                                    </ItemContent>
-                                                                                    <ItemActions>
-                                                                                        {new Intl.NumberFormat("fr-FR").format(payement.montant || 0)}
-                                                                                    </ItemActions>
-                                                                                </Item>
-                                                                            </ContextMenuTrigger>
-                                                                            <ContextMenuContent>
-                                                                                {/* <ContextMenuItem>
-                                                                                    <IconEye className="size-4 mr-2" />
-                                                                                    View Details
-                                                                                </ContextMenuItem> */}
-                                                                                <ContextMenuItem>
-                                                                                    <DeleteDecaissementBtn
-                                                                                        dossierId={dossier.id}
-                                                                                        payementDate={payement.date}
-                                                                                        setDossiers={setDossiers}
-                                                                                    />
-                                                                                </ContextMenuItem>
-                                                                            </ContextMenuContent>
-                                                                        </ContextMenu>
-
-                                                                    ))
-                                                                }
-
-                                                                <Item variant="muted" size="sm">
-                                                                    <ItemContent>
-                                                                        <ItemTitle>Total Payements</ItemTitle>
-                                                                    </ItemContent>
-                                                                    <ItemActions>
-                                                                        {new Intl.NumberFormat("fr-FR").format(totalPayement || 0)}
-                                                                    </ItemActions>
-                                                                </Item>
-                                                                {/* <Item variant="muted" size="sm">
-                                                                    <ItemContent>
-                                                                        <ItemTitle className="font-bold">Total Versement</ItemTitle>
-                                                                    </ItemContent>
-                                                                    <ItemActions>
-                                                                        {new Intl.NumberFormat("fr-FR").format(totalVersement || 0)}
-                                                                    </ItemActions>
-                                                                </Item> */}
-                                                                <Item variant="muted" size="sm">
-                                                                    <ItemContent>
-                                                                        <ItemTitle className="font-bold">Résultat</ItemTitle>
-                                                                    </ItemContent>
-                                                                    <ItemActions>
-                                                                        <Badge variant="outline" className={cn((totalVersement - totalPayement) >= 0 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-red-600 text-white dark:bg-red-600 dark:text-white")}>
-                                                                            {new Intl.NumberFormat("fr-FR").format((totalVersement - totalPayement) || 0)}
-                                                                        </Badge>
-                                                                    </ItemActions>
-                                                                </Item>
-                                                            </>
-
-                                                            : (
-                                                                <p className="text-sm text-muted-foreground">No payements found for this dossier.</p>
-                                                            )
-
-                                                    }
-
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        )
-                                    })
-                            }
-                        </Accordion>
                     </div>
-                </div>
+                )}
+                {currentView === "details" && (
+                    <ViewDossier dossier={dossier} />
+                )}
+
                 <DrawerFooter>
                     <Button
                         variant="outline"
@@ -241,42 +129,488 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
     );
 }
 
-const DeleteDecaissementBtn = ({ dossierId, payementDate, setDossiers }: { dossierId: string, payementDate: string, setDossiers: any }) => {
-
-    const handleDelete = () => {
-        fetch('/api/dossiers/delete-payement', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ dossierId, payementDate }),
-        })
-            .then(response => response.json())
-            .then(() => {
-                // Refresh dossiers after deletion
-                setDossiers((prevDossiers: any[]) => {
-                    return prevDossiers.map((dossier: any) => {
-                        if (dossier.id === dossierId) {
-                            return {
-                                ...dossier,
-                                payements: dossier.payements.filter((p: any) => p.date !== payementDate)
-                            }
-                        }
-                        return dossier;
-                    })
-                });
-                toast.success('Payement deleted successfully');
-            })
-            .catch(error => {
-                console.error('Error deleting payement:', error);
-                toast.error('Failed to delete payement');
-            });
-    }
-
+function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: any, setDossiers: any, navigateTo: any }) {
+    const open = useModalStore(s => s.open)
+    // const client = clients.find(c => c.id === d.clientId);
+    const paye = totalPaye(d);
+    const reste = resteApayer(d);
+    const taux = tauxPaiement(d);
+    // const cidx = clients.findIndex(c => c.id === d.clientId);
     return (
-        <Button variant="ghost" size="sm" onClick={handleDelete}>
-            <IconTrash className="text-red-500 hover:text-red-700 " size={21} />
-            Supprimer
-        </Button>
+        <Card key={d.id} className="rounded-2xl border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+            onClick={() => navigateTo("details", d)}
+        >
+            <CardContent className="p-5">
+                {/* Header card */}
+                <div className="flex items-start justify-between mb-3">
+                    <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition-colors">{d.reference || d.dossierName}</span>
+                            {/* <PriorityBadge priorite={d.priorite} /> */}
+                        </div>
+                        <Badge variant="outline" className={cn(
+                            "gap-1",
+                            reste <= 0
+                                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+                                : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800"
+                        )}>
+                            {reste <= 0 ? (
+                                <>
+                                    <IconCircleCheckFilled className="h-3 w-3 fill-green-500 dark:fill-green-400" />
+                                    PAYÉ
+                                </>
+                            ) : (
+                                <>
+                                    <IconLoader className="h-3 w-3 animate-spin" />
+                                    En cours
+                                </>
+                            )}
+                        </Badge>
+                    </div>
+                    <TrashDossier dossierId={d.id} setDossiers={setDossiers} />
+                </div>
+
+                <p className="text-xs text-slate-500 mb-1 font-medium">{client?.nom}</p>
+                <p className="text-sm text-slate-700 font-medium mb-1 leading-snug line-clamp-2">{d.description}</p>
+                <p className="text-xs text-slate-400 mb-3">{d.type} · {d.port}</p>
+
+                {/* Financier */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-slate-50 rounded-xl p-2.5">
+                        <p className="text-xs text-slate-400 mb-0.5">Total TTC</p>
+                        <p className="text-sm font-bold text-slate-800 tabular-nums">{(Number(d.montant_total) / 1000).toFixed(0)}k</p>
+                    </div>
+                    <div className={`rounded-xl p-2.5 ${reste > 0 ? "bg-rose-50" : "bg-emerald-50"}`}>
+                        <p className={`text-xs mb-0.5 ${reste > 0 ? "text-rose-400" : "text-emerald-500"}`}>Reste à payer</p>
+                        <p className={`text-sm font-bold tabular-nums ${reste > 0 ? "text-rose-600" : "text-emerald-600"}`}>{reste > 0 ? (reste / 1000).toFixed(0) + "k" : "Soldé"}</p>
+                    </div>
+                </div>
+
+                {/* Barre paiement */}
+                <div className="mb-3">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Encaissement</span><span className="font-semibold text-slate-600">{taux}%</span></div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-2 rounded-full transition-all ${taux >= 100 ? "bg-emerald-400" : taux > 50 ? "bg-amber-400" : "bg-rose-400"}`} style={{ width: `${taux}%` }} />
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <div className="text-xs text-slate-400">📅 Éch. {d.dateEcheance}</div>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); open("CREATE_PAYMENT", { d: d, client: client }); }}
+                        disabled={reste <= 0}
+                        className={`text-xs font-semibold px-3 py-1 rounded-lg transition-colors ${reste > 0 ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
+                        {reste > 0 ? "💰 Paiement" : "Soldé"}
+                    </button>
+
+                </div>
+            </CardContent>
+        </Card>
     )
 }
+
+function ViewDossier({ dossier }: { dossier: any }) {
+    const open = useModalStore(s => s.open)
+    const clients = useClientsStore((state) => state.clients);
+    const [d, setD] = useState<Dossier>(dossier)
+    const openDecaissement = useModalDecaissementStore((s) => s.openDecaissement);
+    const openAlert = useAlertStore(s => s.open)
+    // const d = dossier as Dossier;
+    const router = useRouter()
+
+    const client = clients.find(c => c.id === d.clientId);
+
+    const paye = totalPaye(d);
+    const reste = resteApayer(d);
+    const taux = tauxPaiement(d);
+
+
+    const supprimerPaiement = async (dossierId: string, p: any) => {
+        const rs = await openAlert({ message: "Supprimer cet encaissement de " + fmt(p.montant) + " ?" })
+        if (!rs) return
+
+        const res = await fetch("/api/dossiers/paiement", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dossierId, paiementId: p.date }),
+        })
+        if (res.ok) {
+            router.refresh(); // 🔥 refresh data (server components
+            toast.success("Paiement supprimé (simulé)");
+        }
+    };
+
+
+    /* ── Changer statut ── */
+    const changerStatut = async (id: string, statut: string) => {
+        // Appel API pour changer le statut du dossier  
+        // console.log("Changer statut du dossier", id, "en", statut);
+        const res = await fetch("/api/dossiers/paiement", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, statut }),
+        });
+        if (res.ok) {
+            setD(prv => ({ ...prv, statut: statut as Dossier['statut'] }))
+            toast.success("Statut du dossier mis à jour");
+        }
+
+    };
+
+    const supprimerDecaissement = async (dossierId: string, dec: any) => {
+        const rs = await openAlert({ message: "Supprimer ce décaissement de " + fmt(dec.montant) + " ?" })
+        if (!rs) return
+
+        const res = await fetch("/api/dossiers/decaissement", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dossierId, decaissementId: dec.date }),
+        });
+        if (res.ok) {
+            router.refresh(); // 🔥 refresh data (server components)
+            toast.success("Décaissement supprimé");
+        }
+    };
+
+    async function supprimerDossier(d: Dossier) {
+
+        const r = isDossierSolde(d)
+        if (!r) return toast.error("Impossible de supprimer un dossier non clôturé ou annule. Veuillez d'abord le clôturé.")
+
+        const rs = await openAlert({ message: "" })
+        if (!rs) return
+
+        await Commit("/api/dossiers/", { dossierId: d.id }, "DELETE")
+
+        // route.push("/dashboard/dossiers");
+
+    }
+
+
+    return (
+        <div className="space-y-5 px-4 no-scrollbar overflow-y-auto">
+            {/* Breadcrumb */}
+            <div>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-bold text-slate-900">{d.reference}</h1>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        <button
+                            onClick={() => printFacture(d, client, entreprise, true)}
+                            className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+                            🖨 Print Facture
+                        </button>
+                        <button
+                            disabled={reste <= 0}
+                            onClick={() => open("CREATE_PAYMENT", { d: d, client: client })}
+                            className={cn("flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl transition-colors", reste > 0 ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-slate-100 text-slate-400 cursor-not-allowed")}>
+                            🧾 Encaissement
+                        </button>
+
+
+                        <button
+                            onClick={() => openDecaissement({ d: d, client: client })}
+                            className="text-sm font-bold px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white transition-colors">
+                            − Décaissement
+                        </button>
+                        {/* <button
+                            onClick={() => open("CREATE_PAYMENT", { d: d, client: client })}
+                            
+                            className={`text-sm font-bold px-4 py-2 rounded-xl transition-colors ${reste > 0 ? "bg-amber-400 hover:bg-amber-500 text-slate-900" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
+                            + Encaissement
+                        </button> */}
+                        <button
+                            onClick={() => { supprimerDossier(d) }}
+                            className="text-sm font-bold px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-500 transition-colors">
+                            🗑 Supprimer
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* Colonne gauche */}
+                <div className="lg:col-span-2 space-y-4">
+
+                    {/* Info dossier */}
+                    <div className="bg-slate-900 px-5 py-4 flex items-center justify-between">
+                        <div className="text-right">
+                            <p className="text-slate-400 text-xs">B/L · LTA · AWB</p>
+                            <p className="text-white text-sm font-mono font-semibold">{formatBLNumber(d.bl as string).formatted}</p>
+                        </div>
+                    </div>
+
+                    {/* Prestations */}
+                    {/* <Card className="rounded-2xl border-slate-100 shadow-sm">
+                        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-slate-700">Détail des prestations</CardTitle></CardHeader>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-slate-50 border-slate-100">
+                                        {["Prestation", "Montant HT", "% du total"].map(h => (
+                                            <TableHead key={h} className="text-xs font-semibold text-slate-400 uppercase tracking-wider first:pl-5 last:pr-5">{h}</TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {d.prestations.map((p, i) => (
+                                        <TableRow key={i} className="border-slate-50">
+                                            <TableCell className="pl-5 text-sm text-slate-700">{p.label}</TableCell>
+                                            <TableCell className="font-semibold text-slate-800 tabular-nums text-sm">{fmt(p.montant)}</TableCell>
+                                            <TableCell className="pr-5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-1.5 bg-slate-100 rounded-full w-16 overflow-hidden">
+                                                        <div className="h-1.5 bg-blue-400 rounded-full" style={{ width: `${Math.round(p.montant / d.montantTotal * 100)}%` }} />
+                                                    </div>
+                                                    <span className="text-xs text-slate-400">{Math.round(p.montant / d.montantTotal * 100)}%</span>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <div className="flex justify-between items-center px-5 py-3 border-t border-slate-100 bg-slate-50/60">
+                                <span className="text-sm font-bold text-slate-700">Total</span>
+                                <span className="text-base font-black text-slate-900 tabular-nums">{fmt(d.montantTotal)}</span>
+                            </div>
+                        </CardContent>
+                    </Card> */}
+
+                    {/* ── Encaissements reçus ── */}
+                    <Card className="rounded-2xl border-slate-100 shadow-sm">
+                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                            <CardTitle className="text-sm font-semibold text-slate-700">Encaissements reçus du client</CardTitle>
+                            <button
+                                onClick={() => open("CREATE_PAYMENT", { d: d, client: client })} disabled={reste <= 0}
+                                className={`text-xs font-semibold px-3 py-1 rounded-lg transition-colors ${reste > 0 ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}>
+                                + Ajouter
+                            </button>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            {d.versement.length === 0 ? (
+                                <div className="py-6 text-center text-slate-400 text-sm">Aucun encaissement enregistré</div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-emerald-50/60 border-slate-100">
+                                            {["Date", "Référence", "Mode", "Montant", ""].map(h => (
+                                                <TableHead key={h} className="text-xs font-semibold text-slate-400 uppercase tracking-wider first:pl-5 last:pr-5">{h}</TableHead>
+                                            ))}
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {d.versement.map((p, i) => (
+                                            <TableRow key={i} className="border-slate-50 hover:bg-emerald-50/30 group">
+                                                <TableCell className="pl-5 text-sm text-slate-600 font-mono">{formatDate(new Date(p.date))}</TableCell>
+                                                <TableCell className="text-sm text-slate-600 font-mono">{p.ref}</TableCell>
+                                                <TableCell><Badge variant="outline" className="text-xs rounded-lg">{p.mode || p.method}</Badge></TableCell>
+                                                <TableCell className="pr-5 font-bold text-emerald-600 tabular-nums text-sm">+{fmt(p.montant)}</TableCell>
+                                                <TableCell className="pr-3 text-right text-black">
+                                                    <button
+                                                        onClick={() => { supprimerPaiement(d.id, p); }}
+                                                        className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-400 hover:text-rose-600 flex items-center justify-center text-xs"
+                                                        title="Supprimer cet encaissement">
+                                                        ✕
+                                                    </button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                            <div className="flex justify-between items-center px-5 py-2.5 border-t border-slate-100 bg-emerald-50/40">
+                                <span className="text-xs text-slate-500">Total encaissé</span>
+                                <span className="text-sm font-bold text-emerald-600 tabular-nums">{fmt(paye)}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Décaissements ── */}
+                    <Card className="rounded-2xl border-slate-100 shadow-sm">
+                        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="text-sm font-semibold text-slate-700">Décaissements effectués</CardTitle>
+                                <p className="text-xs text-slate-400 mt-0.5">Frais réglés pour le traitement du dossier</p>
+                            </div>
+                            <button
+                                onClick={() => openDecaissement({ d: d, client: client })}
+                                className="text-xs font-semibold px-3 py-1 rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors">
+                                − Ajouter
+                            </button>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            {(d.payements || []).length === 0 ? (
+                                <div className="py-6 text-center text-slate-400 text-sm">Aucun décaissement enregistré</div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-rose-50/50 border-slate-100">
+                                            {["Catégorie", "Date", "Référence", "Mode", "Montant", "Note", ""].map(h => (
+                                                <TableHead key={h} className="text-xs font-semibold text-slate-400 uppercase tracking-wider first:pl-5 last:pr-5">{h}</TableHead>
+                                            ))}
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {(d.payements || []).map((dec, i) => {
+                                            const cat = getCatDecaiss(dec.payement);
+                                            return (
+                                                <TableRow key={i} className="border-slate-50 hover:bg-rose-50/20 group">
+                                                    <TableCell className="pl-5">
+                                                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${cat.bg} ${cat.color} ${cat.border}`}>
+                                                            {cat.icon} {cat.label}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs text-slate-500 font-mono">{formatDate(new Date(dec.date))}</TableCell>
+                                                    <TableCell className="text-xs text-slate-500 font-mono">{dec.ref}</TableCell>
+                                                    <TableCell><Badge variant="outline" className="text-xs rounded-lg">{dec.mode || "ESPECE"}</Badge></TableCell>
+                                                    <TableCell className="font-bold text-rose-600 tabular-nums text-sm">−{fmt(dec.montant)}</TableCell>
+                                                    <TableCell className="pr-5 text-xs text-slate-400 max-w-[100px] truncate">{dec.note || "—"}</TableCell>
+                                                    <TableCell className="pr-3 text-right">
+                                                        <button
+                                                            onClick={() => { supprimerDecaissement(d.id, dec); }}
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-400 hover:text-rose-600 flex items-center justify-center text-xs"
+                                                            title="Supprimer ce décaissement">✕</button>
+
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            )}
+                            <div className="flex justify-between items-center px-5 py-2.5 border-t border-slate-100 bg-rose-50/40">
+                                <span className="text-xs text-slate-500">Total décaissé</span>
+                                <span className="text-sm font-bold text-rose-600 tabular-nums">−{fmt(totalDecaisse(d))}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* ── Solde net (encaissements - décaissements) ── */}
+                    {(() => {
+                        const solde = soldeDecaisse(d);
+                        return (
+                            <Card className={`rounded-2xl shadow-sm border ${solde >= 0 ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Solde net du dossier</p>
+                                            <p className="text-xs text-slate-400">Encaissements − Décaissements</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`text-2xl font-black tabular-nums ${solde >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                                                {solde >= 0 ? "+" : ""}{fmt(solde)}
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-0.5">{solde >= 0 ? "Bénéfice sur opérations" : "Déficit sur opérations"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 grid grid-cols-3 gap-2 pt-3 border-t border-slate-200/60 text-xs">
+                                        {[
+                                            { label: "Encaissé", value: fmt(paye), color: "text-emerald-600" },
+                                            { label: "Décaissé", value: fmt(totalDecaisse(d)), color: "text-rose-600" },
+                                            { label: "Solde net", value: fmt(Math.abs(solde)), color: solde >= 0 ? "text-emerald-700" : "text-rose-700" },
+                                        ].map(r => (
+                                            <div key={r.label} className="text-center">
+                                                <p className="text-slate-400 mb-0.5">{r.label}</p>
+                                                <p className={`font-bold tabular-nums ${r.color}`}>{r.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })()}
+                </div>
+
+                {/* Colonne droite — solde */}
+                <div className="space-y-4">
+                    <div className={`px-5 py-4 ${reste <= 0 ? "bg-emerald-600" : "bg-slate-900"}`}>
+                        <p className={`text-xs uppercase tracking-widest mb-1 ${reste <= 0 ? "text-emerald-100" : "text-slate-400"}`}>Situation financière</p>
+                        <p className={`text-2xl font-black ${reste <= 0 ? "text-white" : "text-white"}`}>{reste <= 0 ? "Soldé" : fmt(reste)}</p>
+                        <p className={`text-xs mt-0.5 ${reste <= 0 ? "text-emerald-200" : "text-slate-400"}`}>{reste <= 0 ? "Paiement complet reçu" : "Reste à percevoir"}</p>
+                    </div>
+                    <Card className="rounded-2xl border-slate-100 shadow-sm overflow-hidden">
+
+                        <CardContent className="p-4 space-y-3">
+                            {[
+                                { label: "Montant total", value: fmt(d.montant_total), color: "text-slate-800" },
+                                { label: "Encaissé", value: fmt(paye), color: "text-emerald-600" },
+                                { label: "Reste", value: fmt(reste), color: reste > 0 ? "text-rose-500" : "text-emerald-600" },
+                            ].map(r => (
+                                <div key={r.label} className="flex justify-between text-sm">
+                                    <span className="text-slate-400">{r.label}</span>
+                                    <span className={`font-bold tabular-nums ${r.color}`}>{r.value}</span>
+                                </div>
+                            ))}
+                            <div className="pt-2">
+                                <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Taux d'encaissement</span><span className="font-semibold text-slate-600">{taux}%</span></div>
+                                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className={`h-3 rounded-full transition-all ${taux >= 100 ? "bg-emerald-400" : taux > 50 ? "bg-amber-400" : "bg-rose-400"}`} style={{ width: `${taux}%` }} />
+                                </div>
+                            </div>
+                            {reste > 0 && (
+                                <button
+                                    onClick={() => open("CREATE_PAYMENT", { d: d, client: client })}
+                                    className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold text-sm py-2.5 rounded-xl transition-colors">
+                                    + Enregistrer un paiement
+                                </button>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Mini résumé décaissements */}
+                    <Card className="rounded-2xl border-slate-100 shadow-sm">
+                        <div className="bg-rose-600 px-4 py-3 rounded-t-2xl flex justify-between items-center">
+                            <p className="text-rose-100 text-xs font-semibold uppercase tracking-widest">Décaissements</p>
+                            <p className="text-white text-lg font-black tabular-nums">{fmt(totalDecaisse(d))}</p>
+                        </div>
+                        <CardContent className="p-4 space-y-1.5">
+                            {CATEGORIES_DECAISSEMENT.map((cat: any) => {
+                                const montantCat = (d.payements || []).filter(x => x.payement === cat.key).reduce((s, x) => s + x.montant, 0);
+                                if (!montantCat) return null;
+                                const pctCat = totalDecaisse(d) ? Math.round(montantCat / totalDecaisse(d) * 100) : 0;
+                                return (
+                                    <div key={cat.key} className="flex items-center gap-2">
+                                        <span className="text-sm shrink-0">{cat.icon}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between text-xs mb-0.5">
+                                                <span className="text-slate-600 truncate font-medium">{cat.label}</span>
+                                                <span className="text-rose-600 font-semibold tabular-nums shrink-0 ml-2">{(montantCat / 1000).toFixed(0)}k</span>
+                                            </div>
+                                            <div className="h-1 bg-slate-100 rounded-full">
+                                                <div className="h-1 bg-rose-300 rounded-full" style={{ width: `${pctCat}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {(d.payements || []).length === 0 && (
+                                <p className="text-xs text-slate-400 text-center py-2">Aucun décaissement</p>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Changer statut */}
+
+                    <Card className="rounded-2xl border-slate-100 shadow-sm">
+                        <CardHeader className="pb-2"><CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Changer le statut</CardTitle></CardHeader>
+                        <CardContent className="p-4 pt-0 grid grid-cols-2 gap-2">
+                            {Object.entries(STATUTS_DOSSIER).map(([k, v]) => (
+                                <button key={k} onClick={() => changerStatut(d.id, k)}
+                                    className={`text-xs font-medium px-2 py-1.5 rounded-lg border transition-all text-left flex items-center gap-1.5 ${d.statut === k ? `${v.bg} ${v.border} ${v.color}` : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${v.dot}`} />
+                                    {v.label}
+                                </button>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+
+                </div>
+            </div>
+        </div>
+    );
+}
+
