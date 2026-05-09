@@ -300,14 +300,14 @@ export default function CardUser() {
                 )
             }
         },
-        {
-            accessorKey: "dossiers_count",
-            header: "Dossiers",
-            cell: ({ row }) => {
-                const dossiersCount = row.original.dossiers?.length || 0;
-                return <DossiersCounter count={dossiersCount} />
-            }
-        },
+        // {
+        //     accessorKey: "dossiers_count",
+        //     header: "Dossiers",
+        //     cell: ({ row }) => {
+        //         const dossiersCount = row.original.dossiers?.length || 0;
+        //         return <DossiersCounter count={dossiersCount} />
+        //     }
+        // },
         {
             accessorKey: "status",
             header: "Statut",
