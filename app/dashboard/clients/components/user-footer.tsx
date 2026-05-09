@@ -93,7 +93,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                     </DrawerTitle>
                 </DrawerHeader>
                 {currentView === "main" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 px-4 no-scrollbar overflow-y-auto">
                         {
                             dossiers.map((dossier: any, index: number) => (
                                 <GridDossier key={index} d={dossier} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
