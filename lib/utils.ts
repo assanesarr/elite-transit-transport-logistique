@@ -16,6 +16,16 @@ export function formatDate(date: Date, local = "en-US"): string {
   })
 }
 
+export const fmtDate = (s?: string): string => {
+  if (!s) return "—";
+  const d = new Date(s + "T00:00:00");
+  return d.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+};
+
 export async function Commit(url: string, saved: any, method?: string) {
   if (!url) return //"/api/users"
   const res = await fetch(url + (saved.id ? `/${saved.id}` : ""), {

@@ -145,7 +145,7 @@ export default function AddClientBtn() {
                 <Button 
                     variant="default" 
                     size="default"
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 gap-2"
+                    className="bg-linear-to-r shadow-lg hover:shadow-xl transition-all duration-300 gap-2"
                 >
                     <IconPlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Ajouter un client</span>
@@ -161,7 +161,7 @@ export default function AddClientBtn() {
                 
                 <form action={handleSubmit}>
                     <DialogHeader className="pb-4 border-b">
-                        <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
+                        <DialogTitle className="text-2xl font-bold bg-linear-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">
                             Ajouter un nouveau client
                         </DialogTitle>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -214,7 +214,7 @@ export default function AddClientBtn() {
                                 <div className="relative">
                                     <Avatar className="h-12 w-12 ring-2 ring-gray-200 dark:ring-gray-700">
                                         <AvatarImage src="" alt="Preview" />
-                                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                                        <AvatarFallback className="bg-linear-to-br from-blue-500 to-blue-600 text-white">
                                             <IconUser className="h-6 w-6" />
                                         </AvatarFallback>
                                     </Avatar>

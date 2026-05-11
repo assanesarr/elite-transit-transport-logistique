@@ -8,6 +8,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import FinanceProvider from './FinanceProvider';
 import { User } from './clients/components/card-user';
 import { EMPLOYE } from '../type';
+import FooterVersionApp from '@/components/footer-version-app';
 
 export default async function DashboardLayout({
     children,
@@ -45,7 +46,6 @@ export default async function DashboardLayout({
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         });
 
-
     if (!user) {
         redirect('/login');
     }
@@ -76,6 +76,7 @@ export default async function DashboardLayout({
                 <SidebarInset>
                     <SiteHeader />
                     <div className="flex flex-1 flex-col">{children}</div>
+                    <FooterVersionApp />
                 </SidebarInset>
             </FinanceProvider>
         </SidebarProvider>

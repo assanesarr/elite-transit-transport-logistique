@@ -1,11 +1,11 @@
 'use client'
 import CardUser from "./components/card-user";
 import AddBtn from "./components/Add-btn";
-import { Suspense, useMemo } from "react";
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, FileText, TrendingUp } from "lucide-react";
-import { getCollection } from "@/lib/firebase-admin";
 import { useClientsStore } from "@/store/clientStore";
+
 
 // Composant de chargement
 function LoadingSkeleton() {
@@ -104,16 +104,7 @@ async function StatsHeader() {
 }
 
 export default async function ClientsPage() {
-    // Vos données commentées pour l'instant
-    // const clients = await adminDb.collection("clients").orderBy("createdAt", "desc").get()
-    // .then(async (snapshot) => {
-    //     const dossiers = await adminDb.collection("dossiers").get()
-    //     const rsp = dossiers.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    //     return snapshot.docs.map((doc) => ({
-    //          id: doc.id, ...doc.data(), 
-    //          dossiers: rsp.filter((d: any) => d.clientId === doc.id).sort((a: any, b: any) => b.createdAt - a.createdAt), 
-    //         }));
-    // }) as User[];
+   
 
     return (
         <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
@@ -133,31 +124,11 @@ export default async function ClientsPage() {
             </div>
 
             {/* Section des statistiques avec Suspense pour le streaming */}
-            <Suspense fallback={<LoadingSkeleton />}>
-                <StatsHeader />
-            </Suspense>
+            <StatsHeader />
 
             {/* Composant principal de la table clients */}
             <div className="bg-white dark:bg-gray-950 rounded-xl border shadow-sm overflow-hidden">
-                <Suspense fallback={
-                    <div className="p-8">
-                        <Skeleton className="h-[500px] w-full" />
-                    </div>
-                }>
-                    <CardUser />
-                </Suspense>
-            </div>
-
-            {/* Pied de page optionnel avec informations */}
-            <div className="flex justify-between items-center text-xs text-muted-foreground pt-4 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                    <span>Système en ligne</span>
-                </div>
-                <div className="flex gap-4">
-                    <span>Dernière mise à jour: {new Date().toLocaleDateString('fr-FR')}</span>
-                    <span>Version 2.0.0</span>
-                </div>
+                <CardUser />
             </div>
         </div>
     );

@@ -8,7 +8,6 @@ import {
     IconChevronsRight,
     IconCircleCheckFilled,
     IconLoader,
-    IconPencil,
     IconFileText,
     IconFolder,
     IconFolderOpen,
@@ -20,10 +19,8 @@ import { useId, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn, generateFileName } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable } from "@tanstack/react-table";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 import {
     Table,
@@ -34,6 +31,9 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { useClientsStore } from "@/store/clientStore";
+
+import { ExportTableClientPDF } from "@/components/pdf-components/export-clients";
+import { GenerateClientReport } from "@/components/pdf-components/raport-client";
 
 export type User = {
     id: string;
@@ -132,161 +132,7 @@ export default function CardUser() {
 
         return { totalClients, totalDossiers, totalMontant };
     }, [clients]);
-    const exportTablePDF = () => {
-        const doc = new jsPDF({
-            orientation: "portrait",
-            unit: "mm",
-            format: "a4",
-        });
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-
-        const PRIMARY = "#2a6dd9";
-        const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
-        const marginX = 15;
-        const headerH = 26;
-        const footerH = 12;
-
-        function enTete() {
-            doc.setDrawColor(PRIMARY);
-            doc.setLineWidth(0.6);
-            doc.line(marginX, headerH, pageW - marginX, headerH);
-
-            doc.setFillColor(PRIMARY);
-            doc.roundedRect(marginX, 7, 13, 13, 2, 2, "F");
-            doc.setTextColor("#ffffff");
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(14);
-            doc.text("E", marginX + 6.5, 15.5, { align: "center" });
-
-            doc.setTextColor(PRIMARY);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("ELITE TRANSIT TRANSPORT LOGISTIQUE", marginX + 16, 11);
-
-            doc.setTextColor("#888888");
-            doc.setFont("helvetica", "italic");
-            doc.setFontSize(8);
-            doc.text("19, Boulevard Djily Mbaye Immeuble Fahd 5ème étage - Dakar",
-                marginX + 16, 14.5);
-            doc.text("RCCM: SN-DKR-2015-13017 / NINEA: 005553020",
-                marginX + 16, 18.5);
-            doc.text("Tel: +221 33 822 48 67 / Email: elitetransit16@gmail.com",
-                marginX + 16, 22.5);
-
-            doc.setTextColor("#333333");
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.text("Rapport des Clients — " + new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }),
-                pageW - marginX, 13, { align: "right" });
-
-            doc.setTextColor("#999999");
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
-            const date = new Date().toLocaleDateString("fr-FR",
-                { day: "2-digit", month: "long", year: "numeric" });
-            doc.text("Généré le " + date,
-                pageW - marginX, 18.5, { align: "right" });
-
-            // Ajout des stats dans le PDF
-            doc.setFontSize(8);
-            doc.setTextColor(PRIMARY);
-            doc.text(`Total Clients: ${stats.totalClients} | Total Dossiers: ${stats.totalDossiers} | Montant Total: ${new Intl.NumberFormat("fr-FR").format(stats.totalMontant)} FCFA`,
-                marginX, headerH + 5);
-        }
-
-        function piedDePage(data: any) {
-            const { pageNumber, pageCount } = data;
-            const y = pageH - footerH;
-
-            doc.setDrawColor("#eeeeee");
-            doc.setLineWidth(0.3);
-            doc.line(marginX, y, pageW - marginX, y);
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(7.5);
-            doc.setTextColor("#aaaaaa");
-
-            doc.text("Elite Transit Transport Logistique",
-                marginX, pageH - 5);
-            doc.text("Votre partenaire de confiance pour le transport et la logistique",
-                pageW / 2, pageH - 5, { align: "center" });
-            doc.text("Page " + pageNumber + " / " + pageCount,
-                pageW - marginX, pageH - 5, { align: "right" });
-        }
-
-        const headers = columns
-            .filter((col) => 'accessorKey' in col && col.accessorKey !== "actions")
-            .map((col) => 'header' in col ? col.header : "");
-
-        const rows = clients.map((client) => {
-            const total = client.dossiers.reduce(
-                (sum: number, v: any) => sum + Number(v.montant_total),
-                0
-            );
-
-            const versements = client.dossiers
-                .flatMap((d: any) => d.versement)
-                .reduce((sum: number, v: any) => sum + Number(v.montant), 0);
-
-            const reste = total - versements;
-            const statut = total === 0 && versements === 0 ? "Nouveau" : reste <= 0 ? "Payé" : "En cours";
-
-            return [
-                client.name,
-                `${client.dossiers.length} dossier(s)`,
-                statut,
-                versements,
-                total,
-                reste,
-            ];
-        });
-
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.setTextColor(PRIMARY);
-        doc.text("Récapitulatif des Clients",
-            marginX, headerH + 14);
-
-        autoTable(doc, {
-            head: [["Nom", "Dossiers", "Statut", "Versements", "Net à Payer", "Restant"]],
-            body: rows,
-            startY: headerH + 20,
-            margin: { left: marginX, right: marginX },
-            styles: {
-                font: "helvetica",
-                fontSize: 9,
-                cellPadding: 3,
-                lineColor: "#dddddd",
-                lineWidth: 0.2,
-            },
-            headStyles: {
-                fillColor: PRIMARY,
-                textColor: "#ffffff",
-                fontStyle: "bold",
-                halign: "left",
-            },
-            alternateRowStyles: {
-                fillColor: "#f0f5ff",
-            },
-            didParseCell(data) {
-                if (data.section === "body" && data.column.index === 2) {
-                    const v = data.cell.raw;
-                    if (v === "Payé") data.cell.styles.textColor = "#438f0d";
-                    if (v === "En cours") data.cell.styles.textColor = "#c70c0c";
-                    if (v === "Nouveau") data.cell.styles.textColor = "#e8810c";
-                }
-            },
-            didDrawPage(data) {
-                enTete();
-                piedDePage(data);
-            },
-        });
-
-        doc.save(generateFileName());
-    };
-
+    
     const columns: ColumnDef<any>[] = [
         {
             accessorKey: "name",
@@ -402,6 +248,7 @@ export default function CardUser() {
             cell({ row }) {
                 return (
                     <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => GenerateClientReport(row.original)}><IconFileText className="h-4 w-4" /></Button>
                         <TrashComponent user={row.original} />
                     </div>
                 )
@@ -438,14 +285,23 @@ export default function CardUser() {
                     }
                     className="max-w-sm"
                 />
+                {/* <DialogDemo clients={clients}   stats={stats} /> */}
                 <Button
-                    variant="outline"
-                    className="ml-auto gap-2 bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-0"
-                    onClick={() => exportTablePDF()}
+                    
+                    className="ml-auto gap-2 bg-linear-to-r  border-0"
+                    onClick={() => ExportTableClientPDF(clients)}
                 >
                     <IconFileText className="h-4 w-4" />
-                    Export PDF
+                    Raport Clients PDF
                 </Button>
+                {/* <Button
+                    variant="outline"
+                    className="ml-auto gap-2 bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-0"
+                    onClick={() => RaportClientDetailPDF(clients)}
+                >
+                    <IconFileText className="h-4 w-4" />
+                    Rapport clients détaillé PDF
+                </Button> */}
             </div>
 
             <div className="overflow-hidden rounded-lg border shadow-sm w-full">

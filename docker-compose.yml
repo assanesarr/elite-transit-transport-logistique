@@ -1,0 +1,17 @@
+services:
+  gielcp:
+    build: .
+    expose:
+      - "3000"
+    restart: always
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./config:/app/config   # config persistante
+    networks:
+      - papamakhtar
+
+networks:
+  papamakhtar:
+    name: papamakhtar
+    external: true

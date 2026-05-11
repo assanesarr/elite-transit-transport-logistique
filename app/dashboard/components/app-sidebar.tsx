@@ -41,7 +41,7 @@ const data = {
     },
     navMain: [
         {
-            title: "Dashboard",
+            title: "Tableau de bord",
             url: "/dashboard",
             icon: IconDashboard,
         },
@@ -51,22 +51,21 @@ const data = {
             icon: IconUsers,
         },
         {
-            title: "Comptabilité",
-            url: "/dashboard/tables",
-            icon: IconListDetails,
+          title: "Suivi des chèques",
+          url: "/dashboard/suivi-cheques",
+          icon: IconFileCheckFilled,
         },
+        // {
+        //     title: "Comptabilité",
+        //     url: "/dashboard/tables",
+        //     icon: IconListDetails,
+        // },
         {
           title: "Charge Bureau",
           url: "/dashboard/charge-bureau",
           icon: IconChartBar,
           items: []
         },
-        {
-          title: "Suivi des chèques",
-          url: "/dashboard/suivi-cheques",
-          icon: IconFileCheckFilled,
-        },
-        
     ],
     navClouds: [
         {

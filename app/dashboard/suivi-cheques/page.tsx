@@ -1,7 +1,9 @@
+import { getCollection } from '@/lib/firebase-admin'
 import SuiviCheques from './frontsuivicheque'
 
-export default function SuiviChequPage() {
+export default async function SuiviChequPage() {
+  const cheques = await getCollection('suiviCheques')
   return (
-    <SuiviCheques />
+    <SuiviCheques initials={cheques as any}/>
   )
 }

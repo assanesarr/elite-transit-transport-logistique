@@ -28,6 +28,7 @@ import { printFacture } from "@/components/FacturePDF";
 import { entreprise } from "@/app/data"
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "./card-user";
+import { GenerateDossierReport } from "@/components/pdf-components/rapport-dossier-client";
 
 type ViewType = "main" | "details";
 
@@ -297,10 +298,15 @@ function ViewDossier({ dossier }: { dossier: any }) {
                         <h1 className="text-xl font-bold text-slate-900">{d.reference}</h1>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                        <button
+                        {/* <button
                             onClick={() => printFacture(d, client, entreprise, true)}
                             className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors">
                             🖨 Print Facture
+                        </button> */}
+                        <button
+                            onClick={() => GenerateDossierReport(d, client)}
+                            className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+                            🖨 Rapport Dossier
                         </button>
                         <button
                             disabled={reste <= 0}

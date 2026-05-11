@@ -1,45 +1,119 @@
-// @ts-nocheck
 'use client'
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import CheckModal from "./components/CheckModal";
 import CheckTable from "./components/CheckTable";
-import StatsBar from "./components/StatsBar";
+import ConfirmModal from "./components/ConfirmModal";
+import StatsBar from "./components/StatCard";
+import { toast } from "sonner";
+import { Commit } from "@/lib/utils";
+import { useAlertStore } from "@/store/alertStore";
+import { ChequeDetailModal } from "./components/AprCheque";
 
-export default function SuiviCheques() {
-  const [cheques, setCheques] = useState([]);
+export interface Cheque {
+  id?: string;
+  date?: string;
+  banque?: string;
+  numero?: string;
+  destinataire?: string;
+  montant: number;
+  description?: string;
+  valide?: boolean;
+}
+
+export default function SuiviCheques({ initials }: { initials: Cheque[] }) {
+  const [cheques, setCheques] = useState<Cheque[]>([...initials]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
+  const [editIndex, setEditIndex] = useState<string | undefined>();
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [selectedCheque, setSelectedCheque] = useState<Cheque | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<string | undefined>();
+  const [viewCheque, setViewCheque] = useState<Cheque | undefined>()
+  const openAlert = useAlertStore(s => s.open)
 
-  const openNew = () => { setEditIndex(null); setModalOpen(true); };
-  const openEdit = (i) => { setEditIndex(i); setModalOpen(true); };
-  const closeModal = () => setModalOpen(false);
+  const openNew = useCallback(() => {
+    setEditIndex(undefined);
+    setModalOpen(true);
+  }, []);
 
-  
-  const handleSave = (data) => {
+  const openEdit = useCallback((c: Cheque) => {
+    setEditIndex(c.id);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => setModalOpen(false), []);
+  const closeConfirmModal = useCallback(() => {
+    setConfirmModalOpen(false);
+    setSelectedCheque(null);
+    setSelectedIndex(undefined);
+  }, []);
+
+  const handleSave = useCallback(async (data: Cheque) => {
+
+    const method = editIndex ? "PUT" : "POST"
+    const payload = editIndex ? { ...data, editId: editIndex } : data
+    const rs = await Commit("/api/suivi-cheque", payload, method)
     setCheques((prev) => {
-      if (editIndex !== null) {
-        const next = [...prev];
-        next[editIndex] = data;
-        return next;
-      }
-      return [...prev, data];
-    });
-    closeModal();
-  };
+      const exists = prev.some((p) => p.id === editIndex);
 
-  const handleDelete = (i) => {
-    if (window.confirm("Supprimer ce chèque ?")) {
-      setCheques((prev) => prev.filter((_, idx) => idx !== i));
-    }
-  };
+      if (exists) {
+        return prev.map((p) =>
+          p.id === editIndex
+            ? { ...p, ...data, id: editIndex }
+            : p
+        );
+      }
+
+      return [...prev, { ...rs }];
+    });
+    toast.success("✅ Chèque validé avec succès !");
+    closeModal();
+  }, [editIndex, closeModal]);
+
+  const handleDelete = useCallback(async (c: Cheque) => {
+    const rs = await openAlert({ message: `Supprimer ce chèque N° ${c.numero}? ` })
+    if (!rs) return
+
+    await Commit("/api/suivi-cheque", { deletedId: c.id }, 'DELETE')
+    setCheques((prev) => prev.filter((p) => p.id !== c.id));
+    toast.success("✅ Chèque supprime avec succès !")
+  }, []);
+
+  const handleOpenConfirm = useCallback((cheque: Cheque, index: number) => {
+    setSelectedCheque(cheque);
+    setSelectedIndex(cheque.id);
+    setConfirmModalOpen(true);
+  }, []);
+
+  const handleValidate = useCallback(async () => {
+    if (!selectedIndex) return
+
+    console.log(selectedIndex)
+    await Commit("/api/suivi-cheque", { editId: selectedIndex, valide: true }, 'PUT')
+    setCheques((prev) => prev.map(p => p.id === selectedIndex ? { ...p, valide: true } : p));
+    toast.success("✅ Chèque validé avec succès !");
+    closeConfirmModal();
+
+  }, [selectedIndex, closeConfirmModal]);
 
   const stats = useMemo(() => {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const total = cheques.length;
+    const montantTotal = cheques.reduce((s, c) => s + Number(c.montant), 0);
+    const montantValide = cheques
+      .filter(c => c.valide)
+      .reduce((s, c) => s + Number(c.montant), 0);
+    const montantEnAttente = cheques
+      .filter(c => !c.valide)
+      .reduce((s, c) => s + Number(c.montant), 0);
+    const tauxValidation = total > 0 ? (montantValide / montantTotal) * 100 : 0;
+
     return {
-      total: cheques.length,
-      montant: cheques.reduce((s, c) => s + Number(c.montant), 0),
-      valides: cheques.filter(c => !c.validite || new Date(c.validite) >= today).length,
-      expires: cheques.filter(c => c.validite && new Date(c.validite) < today).length,
+      total,
+      montant: montantTotal,
+      valides: cheques.filter(c => c.valide).length,
+      enAttente: cheques.filter(c => !c.valide).length,
+      montantValide,
+      montantEnAttente,
+      tauxValidation: Math.round(tauxValidation),
     };
   }, [cheques]);
 
@@ -53,12 +127,12 @@ export default function SuiviCheques() {
               Suivi des chèques
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Registre de vos chèques émis
+              Registre de vos chèques émis et validés
             </p>
           </div>
           <button
             onClick={openNew}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors duration-150"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors duration-150 shadow-sm hover:shadow-md"
           >
             <span className="text-lg leading-none">+</span>
             Nouveau chèque
@@ -73,17 +147,29 @@ export default function SuiviCheques() {
           cheques={cheques}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onOpenConfirm={handleOpenConfirm}
+          onView={(cheque) => setViewCheque(cheque)}
         />
       </div>
 
-      {/* Modal */}
+      {/* Modal d'édition */}
       {modalOpen && (
         <CheckModal
-          initial={editIndex !== null ? cheques[editIndex] : null}
+          initial={editIndex ? cheques.find(c => c.id === editIndex) : null}
           onSave={handleSave}
           onClose={closeModal}
         />
       )}
+      
+      {viewCheque && <ChequeDetailModal cheque={viewCheque} onClose={() => setViewCheque(undefined)}/>}
+
+      {/* Modal de confirmation de validation */}
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        cheque={selectedCheque}
+        onConfirm={handleValidate}
+        onClose={closeConfirmModal}
+      />
     </div>
   );
 }

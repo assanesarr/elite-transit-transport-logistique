@@ -1,0 +1,21 @@
+# 📦 Changelog
+
+
+## v0.1.0 - 2026-05-11
+
+### ✨ Features
+feat(ui) add module suivi des cheques
+feat(api) add charge bureau btn
+feat(api) add dossier count for client
+feat(api) add export to pdf and charge bureau
+feat(api)  add virement for recu
+feat(ui) add color for resute
+feat(ui) add print situation client
+feat(ui) add background login page
+feat(ui) change footer recu
+feat(ui) change name aplication
+feat(api) add new key
+
+### 🐛 Fixes
+fix(api) add payement type on saisie
+

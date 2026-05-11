@@ -1,11 +1,8 @@
 "use client"
 
 import {
-    IconCreditCard,
     IconDotsVertical,
     IconLogout,
-    IconNotification,
-    IconUserCircle,
 } from "@tabler/icons-react"
 
 import {
@@ -36,6 +33,7 @@ export function NavUser() {
     const { isMobile } = useSidebar()
     const user = useAppStore((state) => state.user)
     const version = process.env.NEXT_PUBLIC_APP_VERSION;
+     const appName = process.env.APP_NAME;
 
     return (
         <SidebarMenu>
@@ -56,7 +54,7 @@ export function NavUser() {
                                     {user?.email}
                                 </span>
                             </div>
-                            {version && <span className="text-xs text-muted-foreground ml-2">TransitPro v{version}</span>}
+                            {/* {version && <span className="text-xs text-muted-foreground ml-2 uppercase">{appName || "TransitPro"}  v{version}</span>} */}
                             <IconDotsVertical className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -79,7 +77,7 @@ export function NavUser() {
                                         {user?.email}
                                     </span>
                                 </div>
-                                {version && <span className="text-xs text-muted-foreground ml-2">TransitPro v{version}</span>}
+                                {version && <span className="text-xs text-muted-foreground ml-2 uppercase">{appName || "TransitPro"}  v{version}</span>}
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />

@@ -24,7 +24,7 @@ export const useDossiersStore = create<DossiersState>((set, get) => ({
     ? update(get().dossiers)  // get() donne accès à l'état actuel
     : update;
     
-    const total = dossiers.reduce((s, d) => s + d.montant_total, 0)
+    const total = dossiers.reduce((s, d) => s + Number(d.montant_total), 0)
     const paye = dossiers.reduce((s, d) => s + totalPaye(d), 0)
     const totalDecaiss = dossiers.reduce((s, d) => s + totalDecaisse(d), 0)
 
