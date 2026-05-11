@@ -4,14 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useEffect, useState } from "react";
 import TrashBtn from "./trash-btn";
 import TrashDossier from "./trash-dossier";
 import { ArrowLeft, BadgeCheckIcon, Divide, Folder, Folders, Printer } from "lucide-react";
 import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
-import { Separator } from "@/components/ui/separator";
 import { IconCircleCheckFilled, IconLoader, IconTrash } from "@tabler/icons-react";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { toast } from "sonner";
@@ -24,11 +22,11 @@ import { AvatarCircle } from "../../components/helpers-components";
 import { useModalStore } from "@/store/modal/paiement";
 import { useModalDecaissementStore } from "@/store/modal/decaissement";
 import { useAlertStore } from "@/store/alertStore";
-import { printFacture } from "@/components/FacturePDF";
 import { entreprise } from "@/app/data"
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "./card-user";
 import { GenerateDossierReport } from "@/components/pdf-components/rapport-dossier-client";
+import { GenerateClientReport } from "@/components/pdf-components/raport-client";
 
 type ViewType = "main" | "details";
 
@@ -36,7 +34,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
     const [currentView, setCurrentView] = useState<ViewType>("main");
     const isMobile = useIsMobile();
     const [dossiers, setDossiers] = useState<any[]>(docs)
-    const [dossier, setDossier] = useState(null)
+    const [dossier, setDossier] = useState<Dossier| null>(null)
     const dossiersCount = docs?.length || 0;
 
 
@@ -109,19 +107,15 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                 <DrawerFooter>
                     <Button
                         variant="outline"
-                        onClick={() => window.print()}
+                        onClick={() => currentView === "details" ? GenerateDossierReport(dossier, user, entreprise) : GenerateClientReport(user, entreprise)}
                         className="print:hidden"
                     >
-                        <Printer className="mr-2 h-4 w-4" /> Imprimer le reçu
+                        <Printer className="mr-2 h-4 w-4" /> Imprimer le Rapport {currentView === "details" ? ( dossier && dossier.reference || dossier && dossier.dossierName) : user.name}
                     </Button>
                     <DrawerClose asChild>
                         <p className="hidden text-center text-xs print:text-muted-foreground mt-4 print:block ">
                             Reçu généré par Elite Transit Transport Logistique. Merci de votre confiance!
                         </p>
-                        {/* <>
-                            
-                            <Button variant="outline" className="print:hidden">Done</Button>
-                        </> */}
                     </DrawerClose>
                 </DrawerFooter>
             </DrawerContent>
@@ -304,7 +298,7 @@ function ViewDossier({ dossier }: { dossier: any }) {
                             🖨 Print Facture
                         </button> */}
                         <button
-                            onClick={() => GenerateDossierReport(d, client)}
+                            onClick={() => GenerateDossierReport(d, client, entreprise)}
                             className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors">
                             🖨 Rapport Dossier
                         </button>

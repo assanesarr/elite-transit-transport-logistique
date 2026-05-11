@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable } from "@tanstack/react-table";
-
+import { entreprise } from '@/app/data';
 import {
     Table,
     TableBody,
@@ -94,10 +94,10 @@ const DossiersCounter = ({ count }: { count: number }) => {
     return (
         <div className="flex items-center gap-1.5">
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${count > 5
-                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                    : count > 2
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                : count > 2
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                 }`}>
                 <IconFileDescription className={`h-3 w-3 ${count > 5 ? 'text-orange-500' : 'text-blue-500'
                     }`} />
@@ -124,15 +124,15 @@ export default function CardUser() {
 
     // Calcul des statistiques globales
 
-    const stats = useMemo(() => {
-        const totalClients = clients.length;
-        const totalDossiers = clients.reduce((sum, client) => sum + client.dossiers.length, 0);
-        const totalMontant = clients.reduce((sum, client) =>
-            sum + client.dossiers.reduce((s, d) => s + Number(d.montant_total || 0), 0), 0);
+    // const stats = useMemo(() => {
+    //     const totalClients = clients.length;
+    //     const totalDossiers = clients.reduce((sum, client) => sum + client.dossiers.length, 0);
+    //     const totalMontant = clients.reduce((sum, client) =>
+    //         sum + client.dossiers.reduce((s, d) => s + Number(d.montant_total || 0), 0), 0);
 
-        return { totalClients, totalDossiers, totalMontant };
-    }, [clients]);
-    
+    //     return { totalClients, totalDossiers, totalMontant };
+    // }, [clients]);
+
     const columns: ColumnDef<any>[] = [
         {
             accessorKey: "name",
@@ -248,7 +248,16 @@ export default function CardUser() {
             cell({ row }) {
                 return (
                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => GenerateClientReport(row.original)}><IconFileText className="h-4 w-4" /></Button>
+                        <Button variant="ghost"
+                            size="icon"
+                            className="p-1.5 rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors group relative"
+                            onClick={() => GenerateClientReport(row.original, entreprise)}
+                        >
+                            <IconFileText className="h-4 w-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                Imprimer 
+                            </span>
+                        </Button>
                         <TrashComponent user={row.original} />
                     </div>
                 )
@@ -287,9 +296,9 @@ export default function CardUser() {
                 />
                 {/* <DialogDemo clients={clients}   stats={stats} /> */}
                 <Button
-                    
+
                     className="ml-auto gap-2 bg-linear-to-r  border-0"
-                    onClick={() => ExportTableClientPDF(clients)}
+                    onClick={() => ExportTableClientPDF(clients, entreprise)}
                 >
                     <IconFileText className="h-4 w-4" />
                     Raport Clients PDF

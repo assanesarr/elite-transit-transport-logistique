@@ -21,8 +21,11 @@ export default function TrashComponent({ user }: { user: User }) {
     return (
         <AlertDialog>
             <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
+                <Button variant="ghost" size="sm" className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors group relative">
                     <IconTrash />
+                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        Supprimer {user.name}
+                    </span>
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

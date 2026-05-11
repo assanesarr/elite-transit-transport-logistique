@@ -957,25 +957,25 @@ export const downloadDossierReport = async (dossier, client, entreprise, fileNam
 };
 
 // Dans votre composant
-export const GenerateDossierReport = async (dossier, client) => {
-    const entreprise = {
-        nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
-        adresse: "19, Boulevard Djily Mbaye",
-        ville: "Dakar",
-        pays: "Sénégal",
-        ninea: "005553020",
-        rc: "SN-DKR-2015-13017",
-        telephone: "+221 33 822 48 67",
-        email: "elitetransit16@gmail.com"
-    };
+export const GenerateDossierReport = async (dossier, client, entreprise) => {
+    // const entreprise = {
+    //     nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
+    //     adresse: "19, Boulevard Djily Mbaye",
+    //     ville: "Dakar",
+    //     pays: "Sénégal",
+    //     ninea: "005553020",
+    //     rc: "SN-DKR-2015-13017",
+    //     telephone: "+221 33 822 48 67",
+    //     email: "elitetransit16@gmail.com"
+    // };
 
     const fileName = `dossier_${dossier.reference}_${client.name}.pdf`;
 
     // Pour ouvrir dans une nouvelle fenêtre
-      await printDossierReport(dossier, client, entreprise);
+    //   await printDossierReport(dossier, client, entreprise);
 
     // Ou pour télécharger directement
-    // await downloadDossierReport(dossier, client, entreprise, fileName);
+    await downloadDossierReport(dossier, client, entreprise, fileName);
 };
 
 // Exemple d'appel avec vos données

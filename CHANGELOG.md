@@ -19,3 +19,6 @@ feat(api) add new key
 ### 🐛 Fixes
 fix(api) add payement type on saisie
 
+
+## v0.1.1 - 2026-05-11
+

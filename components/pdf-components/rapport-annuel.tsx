@@ -894,7 +894,7 @@ export const generateMonthlyReport = (dossiers, clients) => {
     return { moisData, stats };
 };
 // Fonction d'export
-export const PrintRapportAnnuel = async (dossiers, clients, entreprise) => {
+export const PrintRapport = async (dossiers, clients, entreprise) => {
     try {
         const annee = new Date().getFullYear();
         const { moisData, stats } = generateMonthlyReport(dossiers, clients);
@@ -950,4 +950,25 @@ export const DownloadRapportAnnuel = async (dossiers, clients, entreprise) => {
         console.error('Erreur:', error);
         alert('Erreur lors du téléchargement: ' + error.message);
     }
+};
+
+export const PrintRapportAnnuel = async (dossier, client, entreprise) => {
+    // const entreprise = {
+    //     nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
+    //     adresse: "19, Boulevard Djily Mbaye",
+    //     ville: "Dakar",
+    //     pays: "Sénégal",
+    //     ninea: "005553020",
+    //     rc: "SN-DKR-2015-13017",
+    //     telephone: "+221 33 822 48 67",
+    //     email: "elitetransit16@gmail.com"
+    // };
+
+    const fileName = `dossier_${dossier.reference}_${client.name}.pdf`;
+
+    // Pour ouvrir dans une nouvelle fenêtre
+    //   await PrintRapport(dossier, client, entreprise);
+
+    // Ou pour télécharger directement
+    await DownloadRapportAnnuel(dossier, client, entreprise, fileName);
 };

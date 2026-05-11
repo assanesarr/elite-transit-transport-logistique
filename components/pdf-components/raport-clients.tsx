@@ -694,19 +694,20 @@ export const downloadClientReport = async (clients, stats, entreprise, fileName)
 
 
 // Dans votre composant
-export const RaportClientDetailPDF = async (clients) => {
-    const entreprise = {
-        nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
-        adresse: "19, Boulevard Djily Mbaye",
-        ville: "Dakar",
-        pays: "Sénégal",
-        ninea: "005553020",
-        rc: "SN-DKR-2015-13017",
-        telephone: "+221 33 822 48 67",
-        email: "elitetransit16@gmail.com"
-    };
+export const RaportClientDetailPDF = async (clients, entreprise) => {
+    // const entreprise = {
+    //     nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
+    //     adresse: "19, Boulevard Djily Mbaye",
+    //     ville: "Dakar",
+    //     pays: "Sénégal",
+    //     ninea: "005553020",
+    //     rc: "SN-DKR-2015-13017",
+    //     telephone: "+221 33 822 48 67",
+    //     email: "elitetransit16@gmail.com"
+    // };
 
     // Calcul des statistiques globales
+    
     const stats = {
         totalClients: clients.length,
         totalDossiers: clients.reduce((sum, c) => sum + c.dossiers.length, 0),
@@ -727,8 +728,8 @@ export const RaportClientDetailPDF = async (clients) => {
     const fileName = `rapport_detaille_clients_${new Date().toLocaleDateString('fr-FR')}.pdf`;
 
     // Pour ouvrir dans une nouvelle fenêtre
-      await printClientReport(clients, stats, entreprise);
+    //   await printClientReport(clients, stats, entreprise);
 
     // Ou pour télécharger directement
-    // await downloadClientReport(clients, stats, entreprise, fileName);
+    await downloadClientReport(clients, stats, entreprise, fileName);
 };
