@@ -164,5 +164,6 @@ export const entreprise = {
   ninea: "005553020",
   rc: "SN-DKR-2015-13017",
   telephone: "+221 33 822 48 67",
-  email: "elitetransit16@gmail.com"
+  email: "elitetransit16@gmail.com",
+  site: "",
 }

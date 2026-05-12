@@ -11,7 +11,8 @@ import {
     IconFileText,
     IconFolder,
     IconFolderOpen,
-    IconFileDescription
+    IconFileDescription,
+    IconTrash
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import TrashComponent from "./trash";
@@ -19,7 +20,7 @@ import { useId, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { cn, isDossierSolde } from "@/lib/utils";
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable } from "@tanstack/react-table";
 import { entreprise } from '@/app/data';
 import {
@@ -34,6 +35,9 @@ import { useClientsStore } from "@/store/clientStore";
 
 import { ExportTableClientPDF } from "@/components/pdf-components/export-clients";
 import { GenerateClientReport } from "@/components/pdf-components/raport-client";
+import { deleteClient } from "@/lib/actions";
+import { toast } from "sonner";
+import { useAlertStore } from "@/store/alertStore";
 
 export type User = {
     id: string;
@@ -117,21 +121,32 @@ export default function CardUser() {
     const clients = useClientsStore((state) => state.clients)
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [sorting, setSorting] = useState<SortingState>([])
+    const openAlert = useAlertStore(s => s.open)
     const [pagination, setPagination] = useState({
         pageIndex: 0,
         pageSize: 10,
     })
 
-    // Calcul des statistiques globales
+    const destr = async (u: User) => {
+        const hasUnsoldDossiers = (dossiers: any[]): boolean => {
+            return dossiers.some(dossier => !isDossierSolde(dossier));
+        };
 
-    // const stats = useMemo(() => {
-    //     const totalClients = clients.length;
-    //     const totalDossiers = clients.reduce((sum, client) => sum + client.dossiers.length, 0);
-    //     const totalMontant = clients.reduce((sum, client) =>
-    //         sum + client.dossiers.reduce((s, d) => s + Number(d.montant_total || 0), 0), 0);
+        if (hasUnsoldDossiers(u.dossiers)) {
+            return toast.error("❌ Suppression refusée : dossiers non soldés présents");
+        }
 
-    //     return { totalClients, totalDossiers, totalMontant };
-    // }, [clients]);
+        const rs = await openAlert({ message: `Supprimer ${u.name}` })
+        if (!rs) return
+
+        const result = await deleteClient(u.id);
+
+        if (result.success) {
+            toast.success("Client supprimé avec succès !");
+        } else {
+            toast.error("Échec de la suppression du client. Veuillez réessayer SVP.");
+        }
+    }
 
     const columns: ColumnDef<any>[] = [
         {
@@ -255,10 +270,21 @@ export default function CardUser() {
                         >
                             <IconFileText className="h-4 w-4" />
                             <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                Imprimer 
+                                Imprimer
                             </span>
                         </Button>
-                        <TrashComponent user={row.original} />
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => destr(row.original)}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors group relative">
+                            <IconTrash />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                Supprimer {row.original.name}
+                            </span>
+                        </Button>
+                        {/* <TrashComponent user={row.original} /> */}
                     </div>
                 )
             },

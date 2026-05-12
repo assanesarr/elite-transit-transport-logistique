@@ -10,7 +10,7 @@ export function PriorityBadge({ priorite }: { priorite: string }) {
     haute:   "bg-orange-100 text-orange-700 border-orange-200",
     normale: "bg-slate-100 text-slate-600 border-slate-200",
   };
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${cfg[priorite]||cfg.normale}`}>{priorite}</span>;
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border capitalize ${cfg[priorite]||cfg.normale}`}>{priorite || 'normale'}</span>;
 }
 
 export function AvatarCircle({ name, idx, size="w-9 h-9", text="text-sm" }: { name: string; idx: number; size?: string; text?: string }) {

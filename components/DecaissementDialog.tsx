@@ -17,6 +17,7 @@ import { Spinner } from "./ui/spinner"
 import SaveBtn from "./save-btn"
 import CancelBtn from "./cancel-btn"
 import { CATEGORIES_DECAISSEMENT } from "@/app/data"
+import { useAgentsStore } from "@/store/agentStore"
 
 const PAYEMENTS = [
     "Debarquement",
@@ -52,6 +53,7 @@ export default function DecaissementDialog({ open, onOpenChange, onSuccess }: { 
     const [datePaiement, setDatePaiement] = useState(new Date().toISOString().split("T")[0])
     const [modePaiement, setModePaiement] = useState("ESPECE")
     const [reference, setReference] = useState(generatePayRef())
+    const agents = useAgentsStore(state => state.agents)
     const [note, setNote] = useState("")
     const [selectedDossier, setSelectedDossier] = useState("")
     const [state, formAction] = useFormState(addMouvement, null)
@@ -324,6 +326,19 @@ export default function DecaissementDialog({ open, onOpenChange, onSuccess }: { 
                                 />
                             </div>
                             <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Responsable</label>
+                                {/* <Input placeholder="ex: Moussa Diaw" value={formDossier.responsable}
+                                                                onChange={e => setFormDossier(f => ({ ...f, responsable: e.target.value }))} className="rounded-xl" />
+                                                             */}
+                                <Select value={note} onValueChange={v => setNote(v)}>
+                                    <SelectTrigger
+                                        className="w-full rounded-xl">
+                                        <SelectValue placeholder="Select Responsable" />
+                                    </SelectTrigger>
+                                    <SelectContent>{agents && agents.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            {/* <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                                     Note
                                 </label>
@@ -333,7 +348,7 @@ export default function DecaissementDialog({ open, onOpenChange, onSuccess }: { 
                                     onChange={e => setNote(e.target.value)}
                                     className="rounded-lg text-sm w-full"
                                 />
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Aperçu */}

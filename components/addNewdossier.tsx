@@ -37,17 +37,14 @@ export default function AddNewdossier() {
     // const setDossiers = useDossiersStore(state => state.setDossiers)
     const [loading, setLoading] = useState(false)
     const route = useRouter();
-    const agents = useAgentsStore(state => state.agents)
     const [tva, setTva] = useState(false)
 
     const [open, setOpen] = useState(false)
     const [openPop, setOpenPop] = useState(false)
-    const [date, setDate] = useState<Date | undefined>(undefined)
+    const [date, setDate] = useState<Date | undefined>(new Date())
 
     const clients = useClientsStore(state => state.clients)
-    // const agents = useAgentsStore(state => state.agents)
-    // const employes = useEmployesStore(state => state.employes)
-    const [formDossier, setFormDossier] = useState({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", prestations: [{ label: "", montant: "" }] });
+    const [formDossier, setFormDossier] = useState({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
 
 
     /* ── Ajouter dossier ── */
@@ -55,12 +52,11 @@ export default function AddNewdossier() {
         setLoading(true)
         if (!formDossier.clientId || !formDossier.description) return;
         const total = formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0);
-        // const num = String(dossiers.length + 1).padStart(3, "0");
         const ref: string = getNextNumero(dossiers)
         const payload = {
             reference: ref,
             tva,
-            dossierName: ref,
+            dossierName: formDossier.dossierName,
             clientId: formDossier.clientId,
             type: formDossier.type,
             description: formDossier.description,
@@ -70,7 +66,6 @@ export default function AddNewdossier() {
             montant_total: total,
             prestations: formDossier.prestations.filter(p => p.label && p.montant).map(p => ({ ...p, montant: parseInt(p.montant) })),
             priorite: formDossier.priorite,
-            responsable: formDossier.responsable,
             port: formDossier.port,
             bl: formDossier.bl,
             createdAt: new Date().toISOString(),
@@ -96,16 +91,14 @@ export default function AddNewdossier() {
         // setDossiers(data);
         setLoading(false)
         toast.success('✅ Enregistrement effectué avec succès')
-        setFormDossier({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", prestations: [{ label: "", montant: "" }] });
+        setFormDossier({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
         setOpen(false)
     };
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button
-                // className="bg-amber-400 hover:bg-amber-500 text-slate-900 text-sm font-bold px-4 py-2 rounded-xl transition-colors"
-                >
+                <Button>
                     + Nouveau dossier
                 </Button>
             </DialogTrigger>
@@ -127,15 +120,12 @@ export default function AddNewdossier() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <label className={cn("flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none transition-colors",
-                                tva ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-200 hover:border-slate-300")}>
-                                <input type="checkbox" checked={tva as boolean} onChange={e => setTva(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
-                                <div>
-                                    <div className="text-sm font-semibold text-slate-800">TVA 18%</div>
-                                    <div className="text-xs text-slate-400">TVA Aprique</div>
-                                </div>
-                                {tva && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
-                            </label>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Dossier N *</label>
+                                <Input placeholder="EX: DOS-2026-001" value={formDossier.dossierName}
+                                    onChange={e => setFormDossier(f => ({ ...f, dossierName: e.target.value }))} className="rounded-xl" />
+                            </div>
+
                             {/* <div>
                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Type de prestation</label>
                                 <Select value={formDossier.type} onValueChange={v => setFormDossier(f => ({ ...f, type: v }))}>
@@ -144,6 +134,15 @@ export default function AddNewdossier() {
                                 </Select>
                             </div> */}
                         </div>
+                        <label className={cn("flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none transition-colors",
+                            tva ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-200 hover:border-slate-300")}>
+                            <input type="checkbox" checked={tva as boolean} onChange={e => setTva(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
+                            <div>
+                                <div className="text-sm font-semibold text-slate-800">TVA 18%</div>
+                                <div className="text-xs text-slate-400">TVA Aprique</div>
+                            </div>
+                            {tva && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
+                        </label>
                         <div>
                             <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Description *</label>
                             <Input placeholder="ex: Conteneur 40HC électroniques — Chine" value={formDossier.description}
@@ -185,30 +184,17 @@ export default function AddNewdossier() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Responsable</label>
-                                {/* <Input placeholder="ex: Moussa Diaw" value={formDossier.responsable}
-                                    onChange={e => setFormDossier(f => ({ ...f, responsable: e.target.value }))} className="rounded-xl" />
-                                 */}
-                                <Select value={formDossier.responsable} onValueChange={v => setFormDossier(f => ({ ...f, responsable: v }))}>
-                                    <SelectTrigger
-
-                                        className="w-full rounded-xl">
-                                        <SelectValue placeholder="Select Responsable" />
-                                    </SelectTrigger>
-                                    <SelectContent>{agents && agents.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            <div>
                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Port / Aéroport</label>
                                 <Input placeholder="ex: Port Dakar" value={formDossier.port}
                                     onChange={e => setFormDossier(f => ({ ...f, port: e.target.value }))} className="rounded-xl" />
                             </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">B/L · LTA · AWB</label>
+                                <Input placeholder="ex: BL-SH-2026-4521" value={formatBLNumber(formDossier.bl).formatted}
+                                    onChange={e => setFormDossier(f => ({ ...f, bl: e.target.value }))} className="rounded-xl" />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">B/L · LTA · AWB</label>
-                            <Input placeholder="ex: BL-SH-2026-4521" value={formatBLNumber(formDossier.bl).formatted}
-                                onChange={e => setFormDossier(f => ({ ...f, bl: e.target.value }))} className="rounded-xl" />
-                        </div>
+
 
                         {/* Prestations */}
                         <div>
@@ -239,8 +225,6 @@ export default function AddNewdossier() {
                                 </span>
                             </div>
                         </div>
-
-
                     </div>
                 </div>
                 <DialogFooter className="gap-3 p-2">

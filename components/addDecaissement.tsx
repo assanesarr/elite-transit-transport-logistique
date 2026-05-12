@@ -11,10 +11,12 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Label } from './ui/label';
 import { PaymentMethodSelect } from './PaymentMethodSelect';
+import { useAgentsStore } from '@/store/agentStore';
 
 export default function AddDecaissement() {
     const { isOpen, data, closeDecaissement } = useModalDecaissementStore();
     const [loading, setLoading] = useState(false);
+     const agents = useAgentsStore(state => state.agents)
     const route = useRouter();
 
     const [formDecaiss, setFormDecaiss] = useState({
@@ -159,12 +161,22 @@ export default function AddDecaissement() {
                                     className="rounded-xl font-mono text-sm" />
                             </div>
                             <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Agent</label>
+                                <Select value={formDecaiss.note} onValueChange={e => setFormDecaiss(f => ({ ...f, note: e }))}>
+                                    <SelectTrigger
+                                        className="w-full rounded-xl">
+                                        <SelectValue placeholder="Select Responsable" />
+                                    </SelectTrigger>
+                                    <SelectContent>{agents && agents.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            {/* <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Note</label>
                                 <Input placeholder="Commentaire…"
                                     value={formDecaiss.note}
                                     onChange={e => setFormDecaiss(f => ({ ...f, note: e.target.value }))}
                                     className="rounded-xl text-sm" />
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* ── Aperçu ── */}

@@ -6,19 +6,16 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useEffect, useState } from "react";
-import TrashBtn from "./trash-btn";
-import TrashDossier from "./trash-dossier";
-import { ArrowLeft, BadgeCheckIcon, Divide, Folder, Folders, Printer } from "lucide-react";
-import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item";
+
+import { ArrowLeft, Printer, Trash2 } from "lucide-react";
 import { IconCircleCheckFilled, IconLoader, IconTrash } from "@tabler/icons-react";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { toast } from "sonner";
 import { cn, Commit, fmt, formatBLNumber, formatDate, getCatDecaiss, isDossierSolde, resteApayer, soldeDecaisse, tauxPaiement, totalDecaisse, totalPaye } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dossier } from "@/app/type";
 import { useClientsStore } from "@/store/clientStore";
 import { CATEGORIES_DECAISSEMENT, STATUTS_DOSSIER } from "@/app/data";
-import { AvatarCircle } from "../../components/helpers-components";
+import { AvatarCircle, PriorityBadge } from "../../components/helpers-components";
 import { useModalStore } from "@/store/modal/paiement";
 import { useModalDecaissementStore } from "@/store/modal/decaissement";
 import { useAlertStore } from "@/store/alertStore";
@@ -34,7 +31,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
     const [currentView, setCurrentView] = useState<ViewType>("main");
     const isMobile = useIsMobile();
     const [dossiers, setDossiers] = useState<any[]>(docs)
-    const [dossier, setDossier] = useState<Dossier| null>(null)
+    const [dossier, setDossier] = useState<Dossier | null>(null)
     const dossiersCount = docs?.length || 0;
 
 
@@ -110,7 +107,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                         onClick={() => currentView === "details" ? GenerateDossierReport(dossier, user, entreprise) : GenerateClientReport(user, entreprise)}
                         className="print:hidden"
                     >
-                        <Printer className="mr-2 h-4 w-4" /> Imprimer le Rapport {currentView === "details" ? ( dossier && dossier.reference || dossier && dossier.dossierName) : user.name}
+                        <Printer className="mr-2 h-4 w-4" /> Imprimer le Rapport {currentView === "details" ? (dossier && dossier.reference || dossier && dossier.dossierName) : user.name}
                     </Button>
                     <DrawerClose asChild>
                         <p className="hidden text-center text-xs print:text-muted-foreground mt-4 print:block ">
@@ -126,11 +123,25 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
 
 function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: any, setDossiers: any, navigateTo: any }) {
     const open = useModalStore(s => s.open)
-    // const client = clients.find(c => c.id === d.clientId);
-    const paye = totalPaye(d);
+    const openAlert = useAlertStore(s => s.open)
+    // const paye = totalPaye(d);
     const reste = resteApayer(d);
     const taux = tauxPaiement(d);
-    // const cidx = clients.findIndex(c => c.id === d.clientId);
+
+
+    const deleteDossier = async (dossierId: string) => {
+        const r = isDossierSolde(d)
+        if (!r) return toast.error("Impossible de supprimer un dossier non clôturé ou annule. Veuillez d'abord le clôturé.")
+
+        const result = await openAlert({ message: `Supprimer lee Dossier "${d.dossierName}" ` })
+
+        if (!result) return
+
+        await Commit('/api/dossiers/delete-dossier', { dossierId }, "DELETE")
+        setDossiers((prev: Dossier[]) => prev.filter(item => item.id !== dossierId))
+        toast.success(`Le Dossier ${d.dossierName} est supprimer aveec succes!!!`)
+
+    };
     return (
         <Card key={d.id} className="rounded-2xl border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
             onClick={() => navigateTo("details", d)}
@@ -140,7 +151,7 @@ function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: a
                 <div className="flex items-start justify-between mb-3">
                     <div>
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition-colors">{d.reference || d.dossierName}</span>
+                            <span className="font-bold text-slate-800 text-sm group-hover:text-slate-600 transition-colors">{d.dossierName || d.reference}</span>
                             {/* <PriorityBadge priorite={d.priorite} /> */}
                         </div>
                         <Badge variant="outline" className={cn(
@@ -162,10 +173,16 @@ function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: a
                             )}
                         </Badge>
                     </div>
-                    <TrashDossier dossierId={d.id} setDossiers={setDossiers} />
+                    <button
+                        onClick={(e) => { e.stopPropagation(); deleteDossier(d.id) }}
+                        className="p-1.5 rounded-md text-slate-300 hover:text-red-600 hover:bg-red-50 transition-colors group relative"
+                        title="Supprimer"
+                    >
+                        <Trash2 size={14} />
+                    </button>
                 </div>
 
-                <p className="text-xs text-slate-500 mb-1 font-medium">{client?.nom}</p>
+                <p className="text-xs text-slate-500 mb-1 font-medium">{client?.name}</p>
                 <p className="text-sm text-slate-700 font-medium mb-1 leading-snug line-clamp-2">{d.description}</p>
                 <p className="text-xs text-slate-400 mb-3">{d.type} · {d.port}</p>
 
@@ -278,7 +295,7 @@ function ViewDossier({ dossier }: { dossier: any }) {
 
         await Commit("/api/dossiers/", { dossierId: d.id }, "DELETE")
 
-        // route.push("/dashboard/dossiers");
+        toast.success(`Le Dossier ${d.dossierName} est supprimer aveec succes!!!`)
 
     }
 
@@ -289,7 +306,7 @@ function ViewDossier({ dossier }: { dossier: any }) {
             <div>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-bold text-slate-900">{d.reference || d.dossierName}</h1>
+                        <h1 className="text-xl font-bold text-slate-900">{d.dossierName || d.reference}</h1>
                     </div>
                     <div className="flex gap-2 flex-wrap">
                         {/* <button

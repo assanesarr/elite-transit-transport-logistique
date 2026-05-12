@@ -36,7 +36,7 @@ export default async function DashboardLayout({
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         }) as any[];
 
-    const employes = await adminDb.collection("users").where("role", "==", "EMPLOYE").get()
+    const employes = await adminDb.collection("users").where("role", "==", "admin").get()
         .then((snapshot) => {
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         }) as EMPLOYE[];
