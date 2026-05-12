@@ -12,6 +12,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { linkClass } from "@/lib/utils"
 // import { Skeleton } from "@/components/ui/skeleton"
 // import { Switch } from "@/components/ui/switch"
 
@@ -25,24 +27,26 @@ export function NavSecondary({
     icon: Icon
   }[]
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
+  const route = useRouter();
+  const pathname = usePathname();
 
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+
+  // React.useEffect(() => {
+  //   setMounted(true)
+  // }, [])
 
   return (
     <SidebarGroup {...props}>
-      <SidebarGroupContent>
+      <SidebarGroupContent className="bg-slate-900">
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
-                <Link href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </Link>
+              <SidebarMenuButton
+                className={linkClass(item.url, pathname)}
+                onClick={() => route.push(item.url)}
+              >
+                <item.icon />
+                <span>{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

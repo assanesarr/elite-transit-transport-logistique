@@ -16,7 +16,7 @@ export default async function SettingsPage() {
         });
 
     return (
-        <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="@container/main flex flex-1 flex-col gap-2 px-6 py-10">
             <div className="flex flex-col gap-4 p-4 md:gap-6 md:py-6">
                 {/* <ConfigurationsFront /> */}
                 <TableUsers users={users} />

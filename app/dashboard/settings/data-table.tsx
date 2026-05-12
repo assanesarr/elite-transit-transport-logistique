@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Save } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function TableUsers(
     { users }:
@@ -44,7 +45,7 @@ export default function TableUsers(
     }
 
     const handleClick = (userId: string) => {
-        
+
         if (edit === userId) {
             if (!name && !email) return setEdit(null);
             // Update user name in database
@@ -79,50 +80,54 @@ export default function TableUsers(
     }, [state])
 
     return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Users</h2>
-                    <p className="text-muted-foreground">
-                        Gérer les utilisateurs et leurs rôles.</p>
+        <Card className="overflow-hidden" >
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">Users</h2>
+                        <p className="text-muted-foreground">
+                            Gérer les utilisateurs et leurs rôles.</p>
+                    </div>
+                    <AddUser />
                 </div>
-                <AddUser />
-            </div>
-            <Table>
-                {/* <TableCaption>A list of your recent invoices.</TableCaption> */}
-                <TableHeader>
-                    <TableRow>
-                        <TableHead >Name</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {users.map((user) => (
-                        <TableRow key={user.id}>
-                            <TableCell className="font-medium capitalize">
-                                {edit === user.id ? <Input defaultValue={user.name} name="name" onChange={handleChange} /> : user.name}
-                            </TableCell>
-                            <TableCell>{user.role}</TableCell>
-                            <TableCell>{edit === user.id ? <Input defaultValue={user.email} name="email" onChange={(e) => setEmail(e.target.value)} /> : user.email}</TableCell>
-                            <TableCell className="text-right flex gap-2 justify-end">
-                                <Button variant="outline" size="icon" onClick={() => {
-                                    // if (user.name === name && user.email === email) return setEdit(null);
-                                    handleClick(user.id)
-                                }}>
-                                    {edit === user.id ? <Save className="w-4 h-4" /> : <IconEdit />}
-                                </Button>
-                                <form action={formAction}>
-                                    <input type="hidden" name="id" value={user.id} />
-                                    <DeleteButton />
-                                </form>
-                            </TableCell>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    {/* <TableCaption>A list of your recent invoices.</TableCaption> */}
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead >Name</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </div>
+                    </TableHeader>
+                    <TableBody>
+                        {users.map((user) => (
+                            <TableRow key={user.id}>
+                                <TableCell className="font-medium capitalize">
+                                    {edit === user.id ? <Input defaultValue={user.name} name="name" onChange={handleChange} /> : user.name}
+                                </TableCell>
+                                <TableCell>{user.role}</TableCell>
+                                <TableCell>{edit === user.id ? <Input defaultValue={user.email} name="email" onChange={(e) => setEmail(e.target.value)} /> : user.email}</TableCell>
+                                <TableCell className="text-right flex gap-2 justify-end">
+                                    <Button variant="outline" size="icon" onClick={() => {
+                                        // if (user.name === name && user.email === email) return setEdit(null);
+                                        handleClick(user.id)
+                                    }}>
+                                        {edit === user.id ? <Save className="w-4 h-4" /> : <IconEdit />}
+                                    </Button>
+                                    <form action={formAction}>
+                                        <input type="hidden" name="id" value={user.id} />
+                                        <DeleteButton />
+                                    </form>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
     );
 }
 

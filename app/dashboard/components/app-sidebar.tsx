@@ -51,9 +51,9 @@ const data = {
             icon: IconUsers,
         },
         {
-          title: "Suivi des chèques",
-          url: "/dashboard/suivi-cheques",
-          icon: IconFileCheckFilled,
+            title: "Suivi des chèques",
+            url: "/dashboard/suivi-cheques",
+            icon: IconFileCheckFilled,
         },
         // {
         //     title: "Comptabilité",
@@ -61,10 +61,10 @@ const data = {
         //     icon: IconListDetails,
         // },
         {
-          title: "Charge Bureau",
-          url: "/dashboard/charge-bureau",
-          icon: IconChartBar,
-          items: []
+            title: "Charge Bureau",
+            url: "/dashboard/charge-bureau",
+            icon: IconChartBar,
+            items: []
         },
     ],
     navClouds: [
@@ -144,32 +144,37 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     React.useEffect(() => {
-        
+
     }, []);
 
     return (
-        <Sidebar collapsible="offcanvas" {...props}>
-            <SidebarHeader>
+        <Sidebar collapsible="offcanvas" {...props} className="bg-slate-900">
+            <SidebarHeader className="bg-slate-900">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             asChild
-                            className="data-[slot=sidebar-menu-button]:p-1.5!"
+                            className="data-[slot=sidebar-menu-button]:p-1.5! hover:bg-slate-800 hover:text-white"
                         >
                             <Link href="#">
-                                <IconInnerShadowTop className="size-5!" />
-                                <span className="text-base font-semibold">ETTL</span>
+                                <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center shrink-0">
+                                    <span className="text-slate-50 font-black text-sm">E</span>
+                                </div>
+                                <div>
+                                    <p className="text-white font-bold text-sm leading-tight">Elite Transit Transport</p>
+                                    <p className="text-slate-500 text-xs">Gestionnaire clients</p>
+                                </div>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent>
-                <NavMain items={data.navMain}  />
+            <SidebarContent className="bg-slate-900">
+                <NavMain items={data.navMain} />
                 {/* <NavDocuments items={data.documents} /> */}
                 <NavSecondary items={data.navSecondary} className="mt-auto" />
             </SidebarContent>
-            <SidebarFooter>
+            <SidebarFooter className="bg-slate-900">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

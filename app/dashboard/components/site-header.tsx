@@ -1,4 +1,5 @@
 "use client"
+import AddNewdossier from "@/components/addNewdossier"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useBreadcrumb } from "@/hooks/use-breadcrumb"
@@ -13,7 +14,7 @@ export function SiteHeader() {
   const isOpen = useUIStore((state) => state.isOpen);
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+      <div className="flex w-full items-center gap-1 px-6 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1" />
         <Separator
           orientation="vertical"
@@ -40,15 +41,16 @@ export function SiteHeader() {
         })}
       </div>
       <div className="ml-auto flex w-full items-center justify-end gap-4 px-4 lg:px-6">
-        <span className="hidden lg:inline">
+        {/* <span className="hidden lg:inline">
           {new Date().toLocaleDateString("fr-FR", {
             weekday: "long",
             year: "numeric",
             month: "long",
             day: "numeric",
           })}
-        </span>
-        <Separator
+        </span> */}
+        <AddNewdossier />
+        {/* <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
@@ -60,7 +62,7 @@ export function SiteHeader() {
             }).format(stats.soldeNet)
 
           }</span> : <span >••••••</span>}
-        </span>
+        </span> */}
       </div>
     </header>
   )

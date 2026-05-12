@@ -402,7 +402,7 @@ export async function addMouvement(
     }
 }
 
-export async function handleSignout(formData: FormData) {
+export async function handleSignout() {
     await signOut()
 }
 

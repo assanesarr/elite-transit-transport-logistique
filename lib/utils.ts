@@ -94,7 +94,11 @@ export async function saltAndHashPassword(): Promise<string> {
   });
 }
 
-
+export const linkClass = (path: string, pathname: string) =>
+  ` rounded  transition-all ${pathname === path
+    ? "bg-slate-800 text-slate-50 font-semibold shadow-sm hover:bg-slate-700 hover:text-slate-50"
+    : "text-slate-400 hover:text-white hover:bg-slate-800"
+  }`;
 
 export function validateEmail(email: string): boolean {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

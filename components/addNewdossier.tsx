@@ -33,8 +33,6 @@ import { toast } from "sonner"
 
 export default function AddNewdossier() {
     const dossiers = useDossiersStore(state => state.dossiers)
-    // const { typesPrestation, responsables } = useConfigStore(state => state.config)
-    // const setDossiers = useDossiersStore(state => state.setDossiers)
     const [loading, setLoading] = useState(false)
     const route = useRouter();
     const [tva, setTva] = useState(false)
@@ -98,7 +96,7 @@ export default function AddNewdossier() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+                <Button className="bg-slate-900 text-white hover:bg-slate-700 hover:text-slate-100" variant="outline" size="xs">
                     + Nouveau dossier
                 </Button>
             </DialogTrigger>
@@ -107,7 +105,6 @@ export default function AddNewdossier() {
                     <DialogTitle className="text-white font-bold">Nouveau dossier</DialogTitle>
                 </DialogHeader>
                 <div className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 max-h-[90vh] overflow-y-auto">
-
                     <div className="p-6 space-y-4">
                         <div className="grid grid-cols-1 gap-3">
                             <div>

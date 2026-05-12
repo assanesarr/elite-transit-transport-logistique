@@ -9,9 +9,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useRouter } from "next/navigation"
-import { DialogSaisis } from "@/components/saisi-form"
 import AddNewdossier from "@/components/addNewdossier"
+import { usePathname, useRouter } from "next/navigation"
+import { linkClass } from "@/lib/utils"
 
 export function NavMain({
   items,
@@ -23,21 +23,25 @@ export function NavMain({
   }[],
 }) {
 
-    const route = useRouter();
+  const route = useRouter();
+  const pathname = usePathname();
 
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            <AddNewdossier />
-            {/* <DialogSaisis  /> */}
+            
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title} onClick={() => route.push(item.url)} >
+              <SidebarMenuButton
+                className={linkClass(item.url, pathname)}
+                tooltip={item.title}
+                onClick={() => route.push(item.url)}
+              >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
               </SidebarMenuButton>

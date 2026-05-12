@@ -2,6 +2,12 @@ import { create } from "zustand";
 
 type AlertContext = {
   message: string;
+  buttonText?: string;
+  cancelText?: string;
+  destructive?: boolean;
+  onConfirm?: () => void | Promise<void>;
+  onCancel?: () => void;
+  title?: string;
 };
 
 type UIStore = {
