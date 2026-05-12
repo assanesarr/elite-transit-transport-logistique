@@ -81,8 +81,11 @@ export default function CheckTable({ cheques, onEdit, onDelete, onOpenConfirm, o
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 w-24">
-                Date
+              {/* <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 w-24">
+                Date 
+              </th> */}
+              <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 w-24 whitespace-nowrap">
+                Date d'émission
               </th>
               <th className="text-left px-4 py-3 text-xs font-medium text-slate-500 w-28">
                 Banque
@@ -117,7 +120,8 @@ export default function CheckTable({ cheques, onEdit, onDelete, onOpenConfirm, o
                     c.valide ? 'bg-emerald-50/20' : ''
                   }`}
                 >
-                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs ">{fmtDT(c.createdAt)}</td>
+                  {/* <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs ">{fmtDT(c.createdAt)}</td> */}
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs ">{c.date}</td>
                   <td className="px-4 py-3 font-medium text-slate-700 whitespace-nowrap">
                     {c.banque}
                   </td>
