@@ -94,6 +94,47 @@ export async function saltAndHashPassword(): Promise<string> {
   });
 }
 
+// export const formatSNPhone = (value: string) => {
+//   // Sépare les numéros s'il y en a plusieurs (séparés par /, espace, virgule, etc.)
+//   const numbers = value.split(/[\s\/,]+/);
+  
+//   // Formate chaque numéro individuellement
+//   const formattedNumbers = numbers
+//     .map(number => formatSingleSNPhone(number))
+//     .filter(formatted => formatted !== "");
+  
+//   // Rejoint les numéros formatés avec " / "
+//   return formattedNumbers.join(" / ");
+// };
+
+export const formatSNPhone = (value: string) => {
+  // Supprime tout sauf chiffres
+  let digits = value.replace(/\D/g, "");
+
+  // Supprime le 221 si déjà saisi
+  if (digits.startsWith("221")) {
+    digits = digits.slice(3);
+  }
+
+  // Limite à 9 chiffres
+  digits = digits.slice(0, 9);
+
+  // Vérifie si le numéro a exactement 9 chiffres (optionnel)
+  if (digits.length !== 9) {
+    return "";
+  }
+
+  // Formatage: XX XXX XX XX
+  const parts = [
+    digits.slice(0, 2),
+    digits.slice(2, 5),
+    digits.slice(5, 7),
+    digits.slice(7, 9),
+  ].filter(Boolean);
+
+  return `+221 ${parts.join(" ")}`;
+};
+
 export const linkClass = (path: string, pathname: string) =>
   ` rounded  transition-all ${pathname === path
     ? "bg-slate-800 text-slate-50 font-semibold shadow-sm hover:bg-slate-700 hover:text-slate-50"

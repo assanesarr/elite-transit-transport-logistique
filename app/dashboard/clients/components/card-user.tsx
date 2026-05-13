@@ -240,7 +240,7 @@ export default function CardUser() {
         },
         {
             accessorKey: "restant",
-            header: "Reste à Payer",
+            header: "Reste",
             cell({ row }) {
                 const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
                 const totalVersement = row.original.dossiers

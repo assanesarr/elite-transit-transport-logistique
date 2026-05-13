@@ -8,6 +8,7 @@ import {
 } from '@react-pdf/renderer';
 import { pdf } from '@react-pdf/renderer';
 import { ReportHeader } from './ReportHeader';
+import { formatSNPhone } from '@/lib/utils';
 
 // Styles inspirés de la facture
 const styles = StyleSheet.create({
@@ -92,14 +93,17 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
     },
+    colIndex: {
+        width: '8%',
+    },
     colName: {
-        width: '30%',
+        width: '27%',
     },
     colPhone: {
-        width: '20%',
+        width: '18%',
     },
     colEmail: {
-        width: '25%',
+        width: '22%',
     },
     colAddress: {
         width: '25%',
@@ -121,14 +125,17 @@ const styles = StyleSheet.create({
         fontSize: 8,
         color: '#1e293b',
     },
+    cellIndex: {
+        width: '8%',
+    },
     cellName: {
-        width: '30%',
+        width: '27%',
     },
     cellPhone: {
-        width: '20%',
+        width: '18%',
     },
     cellEmail: {
-        width: '25%',
+        width: '22%',
     },
     cellAddress: {
         width: '25%',
@@ -156,47 +163,17 @@ const styles = StyleSheet.create({
     },
 });
 
-// Composant d'en-tête du rapport
-// const ReportHeader = ({ entreprise, currentDate, logoUrl }) => (
-//     <>
-//         <View style={styles.head} fixed>
-//             <View style={styles.headLeft}>
-//                 {logoUrl && (
-//                     <Image src={logoUrl} style={styles.logo} />
-//                 )}
-//                 <View style={styles.companyInfo}>
-//                     <Text style={styles.companyName}>{entreprise.nom}</Text>
-//                     <Text style={styles.companySub}>
-//                         {entreprise.adresse} · {entreprise.ville}, {entreprise.pays}
-//                     </Text>
-//                     <Text style={styles.companySub}>
-//                         NINEA: {entreprise.ninea} · RCCM: {entreprise.rc}
-//                     </Text>
-//                     <Text style={styles.companySub}>
-//                         Tel: {entreprise.telephone} · Email: {entreprise.email}
-//                     </Text>
-//                 </View>
-//             </View>
-//             <View style={styles.headRight}>
-//                 <Text style={styles.reportTitle}>LISTE COMPLÈTE DES CLIENTS</Text>
-//                 <Text style={styles.reportSubtitle}>
-//                     {currentDate}
-//                 </Text>
-//             </View>
-//         </View>
-
-
-//     </>
-// );
-
-// Composant pour une ligne client avec adresse
+// Composant pour une ligne client avec adresse et index
 const ClientRow = ({ client, index }) => (
     <View style={[styles.tableRow, index % 2 === 1 && styles.tableRowEven]}>
+        <View style={[styles.tableCell, styles.cellIndex]}>
+            <Text>{index + 1}</Text>
+        </View>
         <View style={[styles.tableCell, styles.cellName]}>
             <Text>{client.name}</Text>
         </View>
         <View style={[styles.tableCell, styles.cellPhone]}>
-            <Text>{client.phone || '-'}</Text>
+            <Text>{formatSNPhone(client.phone) || '-'}</Text>
         </View>
         <View style={[styles.tableCell, styles.cellEmail]}>
             <Text>{client.email || '-'}</Text>
@@ -249,6 +226,9 @@ export const ClientSimpleReportPDF = ({ clients, entreprise }) => {
 
                             {/* En-tête du tableau - sera répété sur chaque page grâce à 'fixed' */}
                             <View style={styles.tableHeader} fixed>
+                                <View style={[styles.tableHeaderCell, styles.colIndex]}>
+                                    <Text>N°</Text>
+                                </View>
                                 <View style={[styles.tableHeaderCell, styles.colName]}>
                                     <Text>NOM COMPLET</Text>
                                 </View>
@@ -264,9 +244,7 @@ export const ClientSimpleReportPDF = ({ clients, entreprise }) => {
                             </View>
                         </View>
 
-
-
-                        {/* Liste des clients pour cette page */}
+                        {/* Liste des clients pour cette page avec index continu */}
                         {pageClients.map((client, idx) => (
                             <ClientRow
                                 key={(pageNumber - 1) * LIGNES_PAR_PAGE + idx}
@@ -374,46 +352,7 @@ export const generateSimpleClientListDynamic = async (clients, entreprise) => {
 
     // await printSimpleClientReport(clients, entreprise);
 
-
     const fileName = `liste_clients_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}.pdf`;
 
-     await downloadSimpleClientReport(clients, entreprise, fileName);
+    await downloadSimpleClientReport(clients, entreprise, fileName);
 };
-
-// Exemple d'utilisation avec données de test
-/*
-const entreprise = {
-    nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
-    adresse: "19, Boulevard Djily Mbaye",
-    ville: "Dakar",
-    pays: "Sénégal",
-    ninea: "005553020",
-    rc: "SN-DKR-2015-13017",
-    telephone: "+221 33 822 48 67",
-    email: "elitetransit16@gmail.com"
-};
-
-const clients = [
-    {
-        name: "Jean Dupont",
-        telephone: "+221 77 123 45 67",
-        email: "jean.dupont@email.com",
-        adresse: "12 Rue de la Liberté, Dakar"
-    },
-    {
-        name: "Marie Diop",
-        telephone: "+221 78 987 65 43",
-        email: "marie.diop@email.com",
-        adresse: "45 Avenue Cheikh Anta Diop, Dakar"
-    },
-    {
-        name: "Abdoulaye Fall",
-        telephone: "+221 76 555 88 99",
-        email: "a.fall@email.com",
-        adresse: "78 Rue Mermoz, Dakar"
-    }
-];
-
-// Appeler la fonction
-generateSimpleClientList(clients, entreprise);
-*/
