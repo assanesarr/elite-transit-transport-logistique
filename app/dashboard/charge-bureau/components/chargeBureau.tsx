@@ -250,7 +250,7 @@ export default function ChargesBureau({ data }: { data?: any[] }) {
           </Badge>
           <Dialog open={modalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl">
+              <Button className="bg-slate-700 hover:bg-slate-600 text-white rounded-xl">
                 + Ajouter une charge
               </Button>
             </DialogTrigger>

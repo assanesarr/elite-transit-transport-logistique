@@ -5,7 +5,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, Dr
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ArrowLeft, Printer, Trash2 } from "lucide-react";
 import { IconCircleCheckFilled, IconLoader, IconTrash } from "@tabler/icons-react";
@@ -24,6 +24,8 @@ import { useRouter } from "next/navigation";
 import { UserAvatar } from "./card-user";
 import { GenerateDossierReport } from "@/components/pdf-components/rapport-dossier-client";
 import { GenerateClientReport } from "@/components/pdf-components/raport-client";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type ViewType = "main" | "details";
 
@@ -32,7 +34,27 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
     const isMobile = useIsMobile();
     const [dossiers, setDossiers] = useState<any[]>(docs)
     const [dossier, setDossier] = useState<Dossier | null>(null)
+    const [dossierView, setDossierView] = useState("grid"); // "grid" | "list"
     const dossiersCount = docs?.length || 0;
+
+
+    const [filtreStatut, setFiltreStatut] = useState("all");
+    const [filtrePrio, setFiltrePrio] = useState("all");
+    const [recherche, setRecherche] = useState("");
+
+
+    /* ── Dossiers filtrés ── */
+    const dossiersFiltres = useMemo(() => {
+        const q = recherche.toLowerCase();
+        return dossiers.filter(d => {
+            return (
+                (filtreStatut === "all" || d.statut === filtreStatut) &&
+                (filtrePrio === "all" || d.priorite === filtrePrio) &&
+                (!q || d.dossierName.toLowerCase().includes(q) || d.reference.toLowerCase().includes(q))
+            );
+        });
+    }, [dossiers, filtreStatut, filtrePrio, recherche]);
+
 
 
     // Navigation entre les vues
@@ -89,12 +111,60 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                     </DrawerTitle>
                 </DrawerHeader>
                 {currentView === "main" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 px-4 no-scrollbar overflow-y-auto">
-                        {
-                            dossiers.map((dossier: any, index: number) => (
-                                <GridDossier key={index} d={dossier} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
-                            ))
-                        }
+                    <div className="px-4 space-y-4 no-scrollbar overflow-y-auto">
+                        <Card className="rounded-2xl border-slate-100 shadow-sm">
+                            <CardContent className="p-4 flex flex-wrap gap-2 items-center">
+                                <Input placeholder="Rechercher…" className="w-40 h-8 text-xs rounded-xl" value={recherche} onChange={e => setRecherche(e.target.value)} />
+                                <Select value={filtreStatut} onValueChange={setFiltreStatut}>
+                                    <SelectTrigger className="w-36 h-8 text-xs rounded-xl"><SelectValue placeholder="Statut" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Tous statuts</SelectItem>
+                                        {Object.entries(STATUTS_DOSSIER).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={filtrePrio} onValueChange={setFiltrePrio}>
+                                    <SelectTrigger className="w-28 h-8 text-xs rounded-xl"><SelectValue placeholder="Priorité" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Toutes</SelectItem>
+                                        {["urgente", "haute", "normale"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <span className="text-xs text-slate-400">{dossiersFiltres.length} résultats</span>
+                                <div className="ml-auto flex items-center">
+                                    <div className="flex bg-slate-100 rounded-xl p-1 gap-0.5">
+                                        <button onClick={() => setDossierView("grid")} title="Vue grille"
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dossierView === "grid" ? "bg-white shadow-sm text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+                                                <rect x="1" y="1" width="6" height="6" rx="1.5" />
+                                                <rect x="9" y="1" width="6" height="6" rx="1.5" />
+                                                <rect x="1" y="9" width="6" height="6" rx="1.5" />
+                                                <rect x="9" y="9" width="6" height="6" rx="1.5" />
+                                            </svg>
+                                        </button>
+                                        <button onClick={() => setDossierView("list")} title="Vue liste"
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dossierView === "list" ? "bg-white shadow-sm text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 16 16">
+                                                <line x1="3" y1="4" x2="13" y2="4" /><line x1="3" y1="8" x2="13" y2="8" /><line x1="3" y1="12" x2="13" y2="12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        {dossierView === "grid" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {
+                                    dossiersFiltres.map((dossier: any, index: number) => (
+                                        <GridDossier key={index} d={dossier} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
+                                    ))
+                                }
+                            </div>
+                        )}
+
+                        {dossierView === "list" && (
+                            <ListDossier ds={dossiersFiltres} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
+                        )}
+
                     </div>
                 )}
                 {currentView === "details" && (
@@ -217,6 +287,119 @@ function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: a
                     </button>
 
                 </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function ListDossier({ ds, client, setDossiers, navigateTo }: { ds: any[], client: any, setDossiers: any, navigateTo: any }) {
+    const open = useModalStore(s => s.open)
+    const openAlert = useAlertStore(s => s.open)
+    // const paye = totalPaye(d);
+    // const reste = resteApayer(d);
+    // const taux = tauxPaiement(d);
+
+
+    const deleteDossier = async (d: any) => {
+        const r = isDossierSolde(d)
+        if (!r) return toast.error("Impossible de supprimer un dossier non clôturé ou annule. Veuillez d'abord le clôturé.")
+
+        const result = await openAlert({ message: `Supprimer lee Dossier "${d.dossierName}" ` })
+
+        if (!result) return
+
+        await Commit('/api/dossiers/delete-dossier', { dossierId: d.id }, "DELETE")
+        setDossiers((prev: Dossier[]) => prev.filter(item => item.id !== d.id))
+        toast.success(`Le Dossier ${d.dossierName} est supprimer aveec succes!!!`)
+
+    };
+    return (
+        <Card className="rounded-2xl border-slate-100 shadow-sm">
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-slate-50 border-slate-100">
+                            {["Dossier", "Statut", "Facturé", "Encaissé", "Décaissé", "Solde net", "Éch.", ""].map(h => (
+                                <TableHead key={h} className="text-xs font-semibold text-slate-400 uppercase tracking-wider first:pl-5 last:pr-4 py-3 whitespace-nowrap">{h}</TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {ds.length === 0 && (
+                            <TableRow><TableCell colSpan={10} className="text-center py-10 text-slate-400">Aucun dossier</TableCell></TableRow>
+                        )}
+                        {ds.map((d, i) => {
+                            const paye = totalPaye(d);
+                            const reste = resteApayer(d);
+                            const decaiss = totalDecaisse(d);
+                            const solde = soldeDecaisse(d);
+                            return (
+                                <TableRow key={d.id} className="border-slate-50 hover:bg-slate-50/60 cursor-pointer group" onClick={() => navigateTo("details", d)}>
+                                    <TableCell className="pl-5 py-3">
+                                        <div>
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <span className="text-xs font-bold text-slate-800">{d.dossierName || d.reference}</span>
+                                                {/* <PriorityBadge priorite={d.priorite} /> */}
+                                            </div>
+                                            <p className="text-xs text-slate-400 truncate max-w-[140px]">{d.description}</p>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="py-3">
+                                        <Badge variant="outline" className={cn(
+                                            "gap-1",
+                                            reste <= 0
+                                                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+                                                : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800"
+                                        )}>
+                                            {reste <= 0 ? (
+                                                <>
+                                                    <IconCircleCheckFilled className="h-3 w-3 fill-green-500 dark:fill-green-400" />
+                                                    PAYÉ
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <IconLoader className="h-3 w-3 animate-spin" />
+                                                    En cours
+                                                </>
+                                            )}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-sm font-semibold text-slate-800 tabular-nums py-3 text-right">{(d.montant_total / 1000).toFixed(0)}k</TableCell>
+                                    <TableCell className="text-sm font-semibold text-emerald-600 tabular-nums py-3 text-right">{(paye / 1000).toFixed(0)}k</TableCell>
+                                    <TableCell className="text-sm font-semibold text-rose-500 tabular-nums py-3 text-right">{(decaiss / 1000).toFixed(0)}k</TableCell>
+                                    <TableCell className={`text-sm font-bold tabular-nums py-3 text-right ${solde >= 0 ? "text-blue-600" : "text-orange-600"}`}>
+                                        {solde >= 0 ? "+" : ""}{(solde / 1000).toFixed(0)}k
+                                    </TableCell>
+                                    <TableCell className="text-xs text-slate-400 py-3 whitespace-nowrap">{d.dateEcheance}</TableCell>
+                                    <TableCell className="pr-4 py-3">
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={e => { e.stopPropagation(); open("CREATE_PAYMENT", { d: d, client: client }); }} disabled={reste <= 0}
+                                                className={`text-xs font-medium px-2 py-1 rounded-lg transition-colors whitespace-nowrap ${reste > 0 ? "bg-amber-50 hover:bg-amber-100 text-amber-700" : "bg-slate-50 text-slate-300 cursor-not-allowed"}`}>
+                                                {reste > 0 ? "Paiement" : "Soldé"}
+                                            </button>
+
+                                            <button onClick={e => { e.stopPropagation(); deleteDossier(d); }}
+                                                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-100 hover:text-rose-500 text-slate-400 flex items-center justify-center text-xs transition-colors">🗑</button>
+
+
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+                {ds.length > 0 && (
+                    <div className="flex justify-between items-center px-5 py-3 border-t border-slate-50 bg-slate-50/50 text-xs text-slate-400 flex-wrap gap-2">
+                        <span>{ds.length} dossier{ds.length > 1 ? "s" : ""}</span>
+                        <div className="flex gap-4 flex-wrap">
+                            <span>Facturé : <span className="font-semibold text-slate-700">{fmt(ds.reduce((s, d) => s + d.montant_total, 0))}</span></span>
+                            <span>Encaissé : <span className="font-semibold text-emerald-600">{fmt(ds.reduce((s, d) => s + totalPaye(d), 0))}</span></span>
+                            <span>Décaissé : <span className="font-semibold text-rose-500">{fmt(ds.reduce((s, d) => s + totalDecaisse(d), 0))}</span></span>
+                            <span>Solde : <span className={`font-semibold ${ds.reduce((s, d) => s + soldeDecaisse(d), 0) >= 0 ? "text-blue-600" : "text-orange-600"}`}>{fmt(ds.reduce((s, d) => s + soldeDecaisse(d), 0))}</span></span>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )

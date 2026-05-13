@@ -32,19 +32,18 @@ import { startTransition, useState } from "react"
 import { toast } from "sonner"
 
 export default function AddNewdossier() {
-    const dossiers = useDossiersStore(state => state.dossiers)
+    const {dossiers, isOpenDos, setIsOpenDos} = useDossiersStore(state => state)
     const [loading, setLoading] = useState(false)
     const route = useRouter();
     const [tva, setTva] = useState(false)
 
-    const [open, setOpen] = useState(false)
     const [openPop, setOpenPop] = useState(false)
     const [date, setDate] = useState<Date | undefined>(new Date())
 
     const clients = useClientsStore(state => state.clients)
     const [formDossier, setFormDossier] = useState({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
 
-
+    if(!isOpenDos) return null;
     /* ── Ajouter dossier ── */
     const ajouterDossier = async () => {
         setLoading(true)
@@ -90,16 +89,11 @@ export default function AddNewdossier() {
         setLoading(false)
         toast.success('✅ Enregistrement effectué avec succès')
         setFormDossier({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
-        setOpen(false)
+        setIsOpenDos(false)
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="bg-slate-900 text-white hover:bg-slate-700 hover:text-slate-100" variant="outline" size="xs">
-                    + Nouveau dossier
-                </Button>
-            </DialogTrigger>
+        <Dialog open={isOpenDos} onOpenChange={setIsOpenDos}>
             <DialogContent className="p-0 no-scrollbar max-h-screen overflow-y-auto">
                 <DialogHeader className="bg-slate-900 px-6 py-4 rounded-t-lg sticky top-0">
                     <DialogTitle className="text-white font-bold">Nouveau dossier</DialogTitle>
@@ -113,7 +107,7 @@ export default function AddNewdossier() {
                                     <SelectTrigger className="w-full rounded-xl"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                                     <SelectContent>
                                         {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-                                        <Button variant="outline" size="sm" className="w-full" onClick={() => { setOpen(false); startTransition(() => route.push("/dashboard/clients/?r=new")) }} >Ajouter un nouveau client</Button>
+                                        <Button variant="outline" size="sm" className="w-full" onClick={() => { setIsOpenDos(false); startTransition(() => route.push("/dashboard/clients/?r=new")) }} >Ajouter un nouveau client</Button>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -191,8 +185,6 @@ export default function AddNewdossier() {
                                     onChange={e => setFormDossier(f => ({ ...f, bl: e.target.value }))} className="rounded-xl" />
                             </div>
                         </div>
-
-
                         {/* Prestations */}
                         <div>
                             <div className="flex items-center justify-between mb-2">

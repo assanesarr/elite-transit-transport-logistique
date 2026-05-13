@@ -46,6 +46,8 @@ export type Stats = {
 
 export type DossiersState = {
   dossiers: Dossier[]
+  isOpenDos: boolean;
+  setIsOpenDos: (b: boolean) => void;
 
   // 🔥 soit tu utilises le getter
   readonly stats: Stats

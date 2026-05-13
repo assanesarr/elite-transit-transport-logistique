@@ -2,7 +2,7 @@ import { ChartAreaInteractive } from "@/app/dashboard/components/chart-area-inte
 import { SectionCards } from "@/app/dashboard/components/section-cards"
 import DashboardItems from "./components/dashboard-items"
 import Dashboard from "./dash"
-import { db, getCollection } from "@/lib/firebase-admin"
+import { getCollection } from "@/lib/firebase-admin"
 import { Cheque } from "./suivi-cheques/frontsuivicheque"
 
 export default async function DashboardPage() {

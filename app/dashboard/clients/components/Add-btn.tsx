@@ -145,7 +145,7 @@ export default function AddClientBtn() {
                 <Button 
                     variant="default" 
                     size="default"
-                    className="bg-linear-to-r shadow-lg hover:shadow-xl transition-all duration-300 gap-2"
+                    className="bg-linear-to-r shadow-lg hover:shadow-xl font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50 transition-all duration-300 gap-2"
                 >
                     <IconPlus className="h-4 w-4" />
                     <span className="hidden sm:inline">Ajouter un client</span>

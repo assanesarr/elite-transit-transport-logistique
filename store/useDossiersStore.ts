@@ -7,6 +7,7 @@ import { create } from "zustand"
 
 export const useDossiersStore = create<DossiersState>((set, get) => ({
   dossiers: [],
+  isOpenDos: false,
   stats: {
     total: 0,
     paye: 0,
@@ -18,6 +19,7 @@ export const useDossiersStore = create<DossiersState>((set, get) => ({
     aTraiter: 0,
   },
 
+  setIsOpenDos: (b: boolean) => set({ isOpenDos: b }),
   setDossiers: (update) => {
      // Si update est une fonction, l'appeler avec l'état actuel des dossiers
   const dossiers = typeof update === 'function' 

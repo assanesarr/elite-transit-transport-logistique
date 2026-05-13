@@ -323,7 +323,7 @@ export default function CardUser() {
                 {/* <DialogDemo clients={clients}   stats={stats} /> */}
                 <Button
 
-                    className="ml-auto gap-2 bg-linear-to-r  border-0"
+                    className="ml-auto gap-2 bg-linear-to-r font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50 border-0"
                     onClick={() => ExportTableClientPDF(clients, entreprise)}
                 >
                     <IconFileText className="h-4 w-4" />

@@ -13,6 +13,7 @@ import EncaissementDialog from "@/components/EncaissementDialog"
 import { useModalStore } from "@/store/modal/paiement"
 import { AlertDialogView } from '@/components/alertDialogView';
 import AddDecaissement from '@/components/addDecaissement'
+import AddNewdossier from "@/components/addNewdossier"
 
 export default function FinanceProvider({
   children,
@@ -59,5 +60,6 @@ export default function FinanceProvider({
     />
     <AddDecaissement />
        <AlertDialogView />
+       <AddNewdossier />
   </>
 }

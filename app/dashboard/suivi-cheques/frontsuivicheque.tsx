@@ -132,7 +132,7 @@ export default function SuiviCheques({ initials }: { initials: Cheque[] }) {
           </div>
           <button
             onClick={openNew}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors duration-150 shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 font- bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors duration-150 shadow-sm hover:shadow-md"
           >
             <span className="text-lg leading-none">+</span>
             Nouveau chèque

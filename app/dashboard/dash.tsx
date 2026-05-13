@@ -243,27 +243,80 @@ export default function Dashboard({cheques}: {cheques: Cheque[]}) {
     }, [dossiers]);
 
     // Calcul des tendances
-    const trends = useMemo(() => {
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
+    // const trends = useMemo(() => {
+    //     const currentMonth = new Date().getMonth();
+    //     const currentYear = new Date().getFullYear();
 
-        const currentMonthDossiers = dossiers.filter(d => {
-            const date = new Date(d.createdAt);
-            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-        });
+    //     const currentMonthDossiers = dossiers.filter(d => {
+    //         const date = new Date(d.createdAt);
+    //         return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    //     });
 
-        const lastMonthDossiers = dossiers.filter(d => {
-            const date = new Date(d.createdAt);
-            return date.getMonth() === currentMonth - 1 && date.getFullYear() === currentYear;
-        });
+    //     const lastMonthDossiers = dossiers.filter(d => {
+    //         const date = new Date(d.createdAt);
+    //         return date.getMonth() === currentMonth - 1 && date.getFullYear() === currentYear;
+    //     });
 
-        const currentTotal = currentMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
-        const lastTotal = lastMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
+    //     const currentTotal = currentMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
+    //     const lastTotal = lastMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
 
-        return {
-            facturation: lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0
-        };
-    }, [dossiers]);
+    //     return {
+    //         facturation: lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0
+    //     };
+    // }, [dossiers]);
+
+    // Calcul des tendances
+const trends = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Handle previous month (with year rollover)
+    let previousMonth = currentMonth - 1;
+    let previousYear = currentYear;
+    
+    if (previousMonth < 0) {
+        previousMonth = 11; // December
+        previousYear = currentYear - 1;
+    }
+    
+    // Current month dossiers
+    const currentMonthDossiers = dossiers.filter(d => {
+        const date = new Date(d.createdAt);
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    });
+    
+    // Previous month dossiers
+    const previousMonthDossiers = dossiers.filter(d => {
+        const date = new Date(d.createdAt);
+        return date.getMonth() === previousMonth && date.getFullYear() === previousYear;
+    });
+    
+    const currentTotal = currentMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
+    const previousTotal = previousMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
+    
+    // Calculate percentage change
+    let percentChange = 0;
+    let trend = "neutral";
+    
+    if (previousTotal === 0 && currentTotal > 0) {
+        percentChange = 100;
+        trend = "up";
+    } else if (previousTotal === 0 && currentTotal === 0) {
+        percentChange = 0;
+        trend = "neutral";
+    } else {
+        percentChange = ((currentTotal - previousTotal) / previousTotal) * 100;
+        trend = percentChange > 0 ? "up" : percentChange < 0 ? "down" : "neutral";
+    }
+    
+    return {
+        facturation: percentChange,
+        trend: trend,           // ← "up", "down", or "neutral"
+        currentTotal,
+        previousTotal
+    };
+}, [dossiers]);
 
   
 
@@ -347,8 +400,8 @@ export default function Dashboard({cheques}: {cheques: Cheque[]}) {
                     icon={<DollarSign size={16} />}
                     color="text-slate-900"
                     bg="bg-white"
-                    trend="up"
-                    trendValue={`+${trends.facturation.toFixed(1)}%`}
+                    trend={trends.trend}
+                    trendValue={`${trends.facturation > 0 ? '+' : ''}${trends.facturation.toFixed(1)}%`}
                     isOpen={isOpen}
 
                 />

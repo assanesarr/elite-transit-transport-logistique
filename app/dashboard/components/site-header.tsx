@@ -1,14 +1,16 @@
 "use client"
 import AddNewdossier from "@/components/addNewdossier"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useBreadcrumb } from "@/hooks/use-breadcrumb"
 import { useUIStore } from "@/store/booleanStore"
 import { useDossiersStore } from "@/store/useDossiersStore"
+import { IconCirclePlusFilled } from "@tabler/icons-react"
 import Link from "next/link"
 
 export function SiteHeader() {
-  // const solde = useFinanceStore((state) => state.solde)
+  const setIsOpenDos = useDossiersStore(s => s.setIsOpenDos)
   const breadcrumb = useBreadcrumb()
   const stats = useDossiersStore(s => s.stats);
   const isOpen = useUIStore((state) => state.isOpen);
@@ -49,8 +51,13 @@ export function SiteHeader() {
             day: "numeric",
           })}
         </span> */}
-        <AddNewdossier />
-        {/* <Separator
+        <Button 
+          onClick={() => setIsOpenDos(true)}
+          className="flex items-center gap-1.5 text-sm font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50  transition-colors" variant="outline" size="xs">
+          <IconCirclePlusFilled /> Nouveau dossier
+        </Button>
+    
+        <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
@@ -62,7 +69,7 @@ export function SiteHeader() {
             }).format(stats.soldeNet)
 
           }</span> : <span >••••••</span>}
-        </span> */}
+        </span>
       </div>
     </header>
   )

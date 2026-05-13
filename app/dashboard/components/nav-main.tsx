@@ -1,6 +1,6 @@
 "use client"
 
-import { type Icon } from "@tabler/icons-react"
+import { IconCirclePlusFilled, type Icon } from "@tabler/icons-react"
 
 import {
   SidebarGroup,
@@ -12,6 +12,7 @@ import {
 import AddNewdossier from "@/components/addNewdossier"
 import { usePathname, useRouter } from "next/navigation"
 import { linkClass } from "@/lib/utils"
+import { useDossiersStore } from "@/store/useDossiersStore"
 
 export function NavMain({
   items,
@@ -22,6 +23,7 @@ export function NavMain({
     icon?: Icon
   }[],
 }) {
+  const setIsOpen = useDossiersStore((state) => state.setIsOpenDos);
 
   const route = useRouter();
   const pathname = usePathname();
@@ -31,7 +33,16 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
-            
+            <SidebarMenuButton
+              className="bg-slate-700 text-slate-50 font-semibold shadow-sm hover:bg-slate-800 hover:text-slate-50 active:bg-slate/90 active:text-slate-foreground"
+                onClick={() => {
+                  console.log("Add new dossier");
+                  setIsOpen(true);
+                }}
+              >
+                <IconCirclePlusFilled />
+                <span>Ajouter un dossier</span>
+              </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
