@@ -1,6 +1,6 @@
 {
   "name": "transit-pro",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -73,9 +73,9 @@
     "typescript": "^5"
   },
   "build": {
-    "version": "v0.1.6",
+    "version": "v0.1.7",
     "branch": "main",
-    "commit": "c7f7bcf",
-    "updatedAt": "2026-05-13 13:48:48"
+    "commit": "1953a81",
+    "updatedAt": "2026-05-13 14:00:30"
   }
 }

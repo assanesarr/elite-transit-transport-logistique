@@ -211,8 +211,20 @@ export default function CardUser() {
             }
         },
         {
+            accessorKey: "netpaye",
+            header: "Facturé",
+            cell({ row }) {
+                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
+                return (
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {new Intl.NumberFormat("fr-FR").format(totalMontant)} FCFA
+                    </span>
+                )
+            },
+        },
+        {
             accessorKey: "versement",
-            header: "Versements",
+            header: "Encaissé",
             cell({ row }) {
                 const total = row.original.dossiers
                     .flatMap((d: any) => d.versement || [])
@@ -221,18 +233,6 @@ export default function CardUser() {
                 return (
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                         {new Intl.NumberFormat("fr-FR").format(total)} FCFA
-                    </span>
-                )
-            },
-        },
-        {
-            accessorKey: "netpaye",
-            header: "Net à Payer",
-            cell({ row }) {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
-                return (
-                    <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {new Intl.NumberFormat("fr-FR").format(totalMontant)} FCFA
                     </span>
                 )
             },
