@@ -38,6 +38,7 @@ import { GenerateClientReport } from "@/components/pdf-components/raport-client"
 import { deleteClient } from "@/lib/actions";
 import { toast } from "sonner";
 import { useAlertStore } from "@/store/alertStore";
+import { generateSimpleClientListDynamic } from "@/components/pdf-components/ExportClientList";
 
 export type User = {
     id: string;
@@ -320,15 +321,23 @@ export default function CardUser() {
                     }
                     className="max-w-sm"
                 />
-                {/* <DialogDemo clients={clients}   stats={stats} /> */}
-                <Button
 
-                    className="ml-auto gap-2 bg-linear-to-r font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50 border-0"
-                    onClick={() => ExportTableClientPDF(clients, entreprise)}
-                >
-                    <IconFileText className="h-4 w-4" />
-                    Raport Clients PDF
-                </Button>
+                <div className="ml-auto flex items-center gap-2">
+                    <Button
+                        className="gap-2 bg-linear-to-r font-bold text-white bg-green-700 hover:bg-green-600 hover:text-slate-50 border-0"
+                        onClick={() => generateSimpleClientListDynamic(clients, entreprise)}
+                    >
+                        <IconFileText className="h-4 w-4" />
+                        Export Clients PDF
+                    </Button>
+                    <Button
+                        className="ml-auto gap-2 bg-linear-to-r font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50 border-0"
+                        onClick={() => ExportTableClientPDF(clients, entreprise)}
+                    >
+                        <IconFileText className="h-4 w-4" />
+                        Raport Clients PDF
+                    </Button>
+                </div>
                 {/* <Button
                     variant="outline"
                     className="ml-auto gap-2 bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-0"
