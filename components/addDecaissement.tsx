@@ -16,7 +16,7 @@ import { useAgentsStore } from '@/store/agentStore';
 export default function AddDecaissement() {
     const { isOpen, data, closeDecaissement } = useModalDecaissementStore();
     const [loading, setLoading] = useState(false);
-     const agents = useAgentsStore(state => state.agents)
+    const agents = useAgentsStore(state => state.agents)
     const route = useRouter();
 
     const [formDecaiss, setFormDecaiss] = useState({
@@ -167,7 +167,12 @@ export default function AddDecaissement() {
                                         className="w-full rounded-xl">
                                         <SelectValue placeholder="Select Responsable" />
                                     </SelectTrigger>
-                                    <SelectContent>{agents && agents.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}</SelectContent>
+                                    <SelectContent>{
+                                        agents &&
+                                        [...agents].sort((a, b) => a.name.localeCompare(b.name))
+                                            .map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)
+                                    }
+                                    </SelectContent>
                                 </Select>
                             </div>
                             {/* <div>

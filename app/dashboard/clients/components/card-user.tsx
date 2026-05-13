@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import FooterUser from "./user-footer";
 import {
@@ -12,16 +12,18 @@ import {
     IconFolder,
     IconFolderOpen,
     IconFileDescription,
-    IconTrash
+    IconTrash,
+    IconSortAscending,
+    IconSortDescending,
+    IconArrowsSort
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
-import TrashComponent from "./trash";
 import { useId, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, isDossierSolde } from "@/lib/utils";
-import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable } from "@tanstack/react-table";
+import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable, getSortedRowModel } from "@tanstack/react-table";
 import { entreprise } from '@/app/data';
 import {
     Table,
@@ -92,36 +94,52 @@ export const UserAvatar = ({ name, avatar, dossiersCount }: { name: string; avat
     );
 };
 
-// Composant pour le compteur de dossiers stylisé
-const DossiersCounter = ({ count }: { count: number }) => {
-    if (count === 0) return null;
-
-    return (
-        <div className="flex items-center gap-1.5">
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${count > 5
-                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                : count > 2
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                }`}>
-                <IconFileDescription className={`h-3 w-3 ${count > 5 ? 'text-orange-500' : 'text-blue-500'
-                    }`} />
-                <span className="font-semibold">{count}</span>
-                <span className="hidden sm:inline">dossier{count > 1 ? 's' : ''}</span>
-            </div>
-        </div>
-    );
+// Fonctions utilitaires pour les calculs
+const getTotalMontant = (dossiers: any[]) => {
+    return dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0);
 };
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[]
-    data: TData[]
-}
+const getTotalVersement = (dossiers: any[]) => {
+    return dossiers
+        .flatMap((d: any) => d.versement || [])
+        .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
+};
+
+const getStatus = (dossiers: any[]) => {
+    const totalMontant = getTotalMontant(dossiers);
+    const totalVersement = getTotalVersement(dossiers);
+    const result = totalMontant - totalVersement;
+
+    if (totalMontant === 0 && totalVersement === 0) return "nouveau";
+    return result <= 0 ? "paye" : "encours";
+};
+
+// Composant d'en-tête de colonne avec tri
+const SortableHeader = ({ column, title }: { column: any; title: string }) => {
+    const sortDirection = column.getIsSorted();
+    
+    return (
+        <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(sortDirection === "asc")}
+            className="flex items-center gap-2 hover:bg-transparent p-0 font-semibold"
+        >
+            {title}
+            {sortDirection === "asc" ? (
+                <IconSortAscending className="h-4 w-4" />
+            ) : sortDirection === "desc" ? (
+                <IconSortDescending className="h-4 w-4" />
+            ) : (
+                <IconArrowsSort className="h-4 w-4 opacity-50" />
+            )}
+        </Button>
+    );
+};
 
 export default function CardUser() {
     const clients = useClientsStore((state) => state.clients)
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-    const [sorting, setSorting] = useState<SortingState>([])
+    const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }])
     const openAlert = useAlertStore(s => s.open)
     const [pagination, setPagination] = useState({
         pageIndex: 0,
@@ -152,9 +170,8 @@ export default function CardUser() {
     const columns: ColumnDef<any>[] = [
         {
             accessorKey: "name",
-            header: "Client & Dossiers",
+            header: ({ column }) => <SortableHeader column={column} title="Client & Dossiers" />,
             cell: ({ row }) => {
-
                 return (
                     <div className="flex items-center justify-between w-full">
                         <FooterUser user={row.original} docs={row.original.dossiers} />
@@ -162,22 +179,13 @@ export default function CardUser() {
                 )
             }
         },
-        // {
-        //     accessorKey: "dossiers_count",
-        //     header: "Dossiers",
-        //     cell: ({ row }) => {
-        //         const dossiersCount = row.original.dossiers?.length || 0;
-        //         return <DossiersCounter count={dossiersCount} />
-        //     }
-        // },
         {
-            accessorKey: "status",
-            header: "Statut",
+            id: "status",
+            accessorFn: (row) => getStatus(row.dossiers),
+            header: ({ column }) => <SortableHeader column={column} title="Statut" />,
             cell: ({ row }) => {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
-                const totalVersement = row.original.dossiers
-                    .flatMap((d: any) => d.versement || [])
-                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
+                const totalMontant = getTotalMontant(row.original.dossiers);
+                const totalVersement = getTotalVersement(row.original.dossiers);
                 const result = totalMontant - totalVersement
 
                 if (totalMontant === 0 && totalVersement === 0) {
@@ -212,10 +220,11 @@ export default function CardUser() {
             }
         },
         {
-            accessorKey: "netpaye",
-            header: "Facturé",
-            cell({ row }) {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
+            id: "netpaye",
+            accessorFn: (row) => getTotalMontant(row.dossiers),
+            header: ({ column }) => <SortableHeader column={column} title="Facturé" />,
+            cell: ({ row }) => {
+                const totalMontant = getTotalMontant(row.original.dossiers);
                 return (
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                         {new Intl.NumberFormat("fr-FR").format(totalMontant)} FCFA
@@ -224,13 +233,11 @@ export default function CardUser() {
             },
         },
         {
-            accessorKey: "versement",
-            header: "Encaissé",
-            cell({ row }) {
-                const total = row.original.dossiers
-                    .flatMap((d: any) => d.versement || [])
-                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
-
+            id: "versement",
+            accessorFn: (row) => getTotalVersement(row.dossiers),
+            header: ({ column }) => <SortableHeader column={column} title="Encaissé" />,
+            cell: ({ row }) => {
+                const total = getTotalVersement(row.original.dossiers);
                 return (
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                         {new Intl.NumberFormat("fr-FR").format(total)} FCFA
@@ -239,13 +246,16 @@ export default function CardUser() {
             },
         },
         {
-            accessorKey: "restant",
-            header: "Reste",
-            cell({ row }) {
-                const totalMontant = row.original.dossiers.reduce((sum: number, v: any) => Number(sum) + Number(v.montant_total || 0), 0)
-                const totalVersement = row.original.dossiers
-                    .flatMap((d: any) => d.versement || [])
-                    .reduce((sum: number, v: any) => Number(sum) + Number(v.montant || 0), 0);
+            id: "restant",
+            accessorFn: (row) => {
+                const totalMontant = getTotalMontant(row.dossiers);
+                const totalVersement = getTotalVersement(row.dossiers);
+                return totalMontant - totalVersement;
+            },
+            header: ({ column }) => <SortableHeader column={column} title="Reste" />,
+            cell: ({ row }) => {
+                const totalMontant = getTotalMontant(row.original.dossiers);
+                const totalVersement = getTotalVersement(row.original.dossiers);
                 const result = totalMontant - totalVersement
 
                 return (
@@ -259,9 +269,9 @@ export default function CardUser() {
             },
         },
         {
-            accessorKey: "actions",
+            id: "actions",
             header: "Actions",
-            cell({ row }) {
+            cell: ({ row }) => {
                 return (
                     <div className="flex items-center gap-1">
                         <Button variant="ghost"
@@ -285,7 +295,6 @@ export default function CardUser() {
                                 Supprimer {row.original.name}
                             </span>
                         </Button>
-                        {/* <TrashComponent user={row.original} /> */}
                     </div>
                 )
             },
@@ -295,20 +304,19 @@ export default function CardUser() {
     const table = useReactTable({
         data: clients,
         columns,
-        onSortingChange: setSorting,
-        getCoreRowModel: getCoreRowModel(),
-        onPaginationChange: setPagination,
-        onColumnFiltersChange: setColumnFilters,
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         state: {
             sorting,
             columnFilters,
             pagination,
         },
+        onSortingChange: setSorting,
+        onColumnFiltersChange: setColumnFilters,
+        onPaginationChange: setPagination,
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(), // Ajout important pour le tri
     })
-
-
 
     return (
         <div className="p-4 w-full space-y-4">
@@ -338,14 +346,6 @@ export default function CardUser() {
                         Raport Clients PDF
                     </Button>
                 </div>
-                {/* <Button
-                    variant="outline"
-                    className="ml-auto gap-2 bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-0"
-                    onClick={() => RaportClientDetailPDF(clients)}
-                >
-                    <IconFileText className="h-4 w-4" />
-                    Rapport clients détaillé PDF
-                </Button> */}
             </div>
 
             <div className="overflow-hidden rounded-lg border shadow-sm w-full">

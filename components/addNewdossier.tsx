@@ -32,7 +32,7 @@ import { startTransition, useState } from "react"
 import { toast } from "sonner"
 
 export default function AddNewdossier() {
-    const {dossiers, isOpenDos, setIsOpenDos} = useDossiersStore(state => state)
+    const { dossiers, isOpenDos, setIsOpenDos } = useDossiersStore(state => state)
     const [loading, setLoading] = useState(false)
     const route = useRouter();
     const [tva, setTva] = useState(false)
@@ -43,7 +43,7 @@ export default function AddNewdossier() {
     const clients = useClientsStore(state => state.clients)
     const [formDossier, setFormDossier] = useState({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
 
-    if(!isOpenDos) return null;
+    if (!isOpenDos) return null;
     /* ── Ajouter dossier ── */
     const ajouterDossier = async () => {
         setLoading(true)
@@ -106,7 +106,10 @@ export default function AddNewdossier() {
                                 <Select value={formDossier.clientId} onValueChange={v => setFormDossier(f => ({ ...f, clientId: v }))}>
                                     <SelectTrigger className="w-full rounded-xl"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
                                     <SelectContent>
-                                        {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                                        {[...clients]
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)
+                                        }
                                         <Button variant="outline" size="sm" className="w-full" onClick={() => { setIsOpenDos(false); startTransition(() => route.push("/dashboard/clients/?r=new")) }} >Ajouter un nouveau client</Button>
                                     </SelectContent>
                                 </Select>

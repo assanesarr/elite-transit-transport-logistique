@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f1f5f9',
         borderRadius: 4,
         overflow: 'hidden',
+        breakInside: 'avoid', // Évite de couper une section entre deux pages
     },
     monthHeader: {
         backgroundColor: '#334155',
@@ -268,6 +269,7 @@ const styles = StyleSheet.create({
     },
     chartContainer: {
         marginTop: 15,
+        marginBottom: 15,
         backgroundColor: '#f8fafc',
         padding: 10,
         borderRadius: 4,
@@ -340,6 +342,10 @@ const styles = StyleSheet.create({
         fontSize: 6.5,
         color: '#94a3b8',
     },
+    // Nouveau style pour les sections qui peuvent être coupées
+    avoidBreak: {
+        breakInside: 'avoid',
+    },
 });
 
 // Utilitaires sécurisés
@@ -362,14 +368,12 @@ const formatMoney = (amount) => {
     return `${safeAmount.toLocaleString('fr-FR').replace(/\u202F/g, " ")} FCFA`;
 };
 
-// Composant d'en-tête
+// Composant d'en-tête (sera fixe sur chaque page)
 const ReportHeader = ({ stats, entreprise, currentDate, annee }) => (
-    <>
+    <View fixed>
         <View style={styles.head}>
             <View style={styles.headLeft}>
-
                 <Image src={'/logo.jpeg'} style={styles.logo} />
-
                 <View style={styles.companyInfo}>
                     <Text style={styles.companyName}>{entreprise.nom || 'Entreprise'}</Text>
                     <Text style={styles.companySub}>
@@ -418,7 +422,7 @@ const ReportHeader = ({ stats, entreprise, currentDate, annee }) => (
                 <Text style={styles.statValue}>{stats.totalDossiers || 0}</Text>
             </View>
         </View>
-    </>
+    </View>
 );
 
 // Composant Badge sécurisé
@@ -441,8 +445,8 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// Composant pour les dossiers du mois
-const MonthDossiersTable = ({ dossiers }) => {
+// Composant pour les dossiers du mois avec pagination interne
+const MonthDossiersTable = ({ dossiers, moisNom }) => {
     const getDossierStatus = (dossier) => {
         const total = safeNumber(dossier.montant_total);
         const versements = safeNumber(dossier.versements);
@@ -463,82 +467,177 @@ const MonthDossiersTable = ({ dossiers }) => {
         );
     }
 
-    return (
-        <View style={styles.subTable}>
-            <View style={styles.subTableHeader}>
-                <View style={styles.colDossierName}>
-                    <Text style={styles.subTableHeaderCell}>Dossier</Text>
+    // Nombre maximum de lignes par page (ajustez selon vos besoins)
+    const MAX_ROWS_PER_PAGE = 15;
+    const totalPages = Math.ceil(dossiers.length / MAX_ROWS_PER_PAGE);
+
+    // Si peu de dossiers, afficher normalement
+    if (dossiers.length <= MAX_ROWS_PER_PAGE) {
+        return (
+            <View style={styles.subTable}>
+                <View style={styles.subTableHeader}>
+                    <View style={styles.colDossierName}>
+                        <Text style={styles.subTableHeaderCell}>Dossier</Text>
+                    </View>
+                    <View style={styles.colClient}>
+                        <Text style={styles.subTableHeaderCell}>Client</Text>
+                    </View>
+                    <View style={styles.colMontant}>
+                        <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Montant</Text>
+                    </View>
+                    <View style={styles.colVersement}>
+                        <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Versé</Text>
+                    </View>
+                    <View style={styles.colReste}>
+                        <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Reste</Text>
+                    </View>
+                    <View style={styles.colStatutDossier}>
+                        <Text style={[styles.subTableHeaderCell, { textAlign: 'center' }]}>Statut</Text>
+                    </View>
                 </View>
-                <View style={styles.colClient}>
-                    <Text style={styles.subTableHeaderCell}>Client</Text>
-                </View>
-                <View style={styles.colMontant}>
-                    <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Montant</Text>
-                </View>
-                <View style={styles.colVersement}>
-                    <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Versé</Text>
-                </View>
-                <View style={styles.colReste}>
-                    <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Reste</Text>
-                </View>
-                <View style={styles.colStatutDossier}>
-                    <Text style={[styles.subTableHeaderCell, { textAlign: 'center' }]}>Statut</Text>
-                </View>
+
+                {dossiers.map((dossier, idx) => {
+                    const total = safeNumber(dossier.montant_total);
+                    const versements = safeNumber(dossier.versements);
+                    const reste = total - versements;
+                    const status = getDossierStatus(dossier);
+
+                    return (
+                        <View
+                            key={idx}
+                            style={[styles.subTableRow, idx % 2 === 1 && styles.subTableRowEven]}
+                        >
+                            <View style={styles.colDossierName}>
+                                <Text style={styles.subTableCell}>{dossier.reference || `Dossier ${idx + 1}`}</Text>
+                            </View>
+                            <View style={styles.colClient}>
+                                <Text style={styles.subTableCell}>{dossier.clientNom || '—'}</Text>
+                            </View>
+                            <View style={styles.colMontant}>
+                                <Text style={[styles.subTableCell, { fontFamily: 'Courier', textAlign: 'right' }]}>
+                                    {formatMoney(total)}
+                                </Text>
+                            </View>
+                            <View style={styles.colVersement}>
+                                <Text style={[styles.subTableCell, { fontFamily: 'Courier', color: '#16a34a', textAlign: 'right' }]}>
+                                    {formatMoney(versements)}
+                                </Text>
+                            </View>
+                            <View style={styles.colReste}>
+                                <Text style={[styles.subTableCell, { fontFamily: 'Courier', color: reste > 0 ? '#dc2626' : '#16a34a', textAlign: 'right' }]}>
+                                    {formatMoney(reste)}
+                                </Text>
+                            </View>
+                            <View style={styles.colStatutDossier}>
+                                <StatusBadge status={status} />
+                            </View>
+                        </View>
+                    );
+                })}
             </View>
+        );
+    }
 
-            {dossiers.map((dossier, idx) => {
-                const total = safeNumber(dossier.montant_total);
-                const versements = safeNumber(dossier.versements);
-                const reste = total - versements;
-                const status = getDossierStatus(dossier);
+    // Si beaucoup de dossiers, paginer
+    const renderPageRows = (pageIndex) => {
+        const startIdx = pageIndex * MAX_ROWS_PER_PAGE;
+        const endIdx = Math.min(startIdx + MAX_ROWS_PER_PAGE, dossiers.length);
+        const pageDossiers = dossiers.slice(startIdx, endIdx);
 
-                return (
-                    <View
-                        key={idx}
-                        style={[styles.subTableRow, idx % 2 === 1 && styles.subTableRowEven]}
-                    >
+        return (
+            <View key={`page-${pageIndex}`} style={{ marginBottom: 10 }}>
+                {pageIndex === 0 && (
+                    <View style={styles.subTableHeader}>
                         <View style={styles.colDossierName}>
-                            <Text style={styles.subTableCell}>{dossier.reference || `Dossier ${idx + 1}`}</Text>
+                            <Text style={styles.subTableHeaderCell}>Dossier</Text>
                         </View>
                         <View style={styles.colClient}>
-                            <Text style={styles.subTableCell}>{dossier.clientNom || '—'}</Text>
+                            <Text style={styles.subTableHeaderCell}>Client</Text>
                         </View>
                         <View style={styles.colMontant}>
-                            <Text style={[styles.subTableCell, { fontFamily: 'Courier', textAlign: 'right' }]}>
-                                {formatMoney(total)}
-                            </Text>
+                            <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Montant</Text>
                         </View>
                         <View style={styles.colVersement}>
-                            <Text style={[styles.subTableCell, { fontFamily: 'Courier', color: '#16a34a', textAlign: 'right' }]}>
-                                {formatMoney(versements)}
-                            </Text>
+                            <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Versé</Text>
                         </View>
                         <View style={styles.colReste}>
-                            <Text style={[styles.subTableCell, { fontFamily: 'Courier', color: reste > 0 ? '#dc2626' : '#16a34a', textAlign: 'right' }]}>
-                                {formatMoney(reste)}
-                            </Text>
+                            <Text style={[styles.subTableHeaderCell, { textAlign: 'right' }]}>Reste</Text>
                         </View>
                         <View style={styles.colStatutDossier}>
-                            <StatusBadge status={status} />
+                            <Text style={[styles.subTableHeaderCell, { textAlign: 'center' }]}>Statut</Text>
                         </View>
                     </View>
-                );
-            })}
+                )}
+
+                {pageDossiers.map((dossier, idx) => {
+                    const total = safeNumber(dossier.montant_total);
+                    const versements = safeNumber(dossier.versements);
+                    const reste = total - versements;
+                    const status = getDossierStatus(dossier);
+                    const globalIdx = startIdx + idx;
+
+                    return (
+                        <View
+                            key={globalIdx}
+                            style={[styles.subTableRow, globalIdx % 2 === 1 && styles.subTableRowEven]}
+                        >
+                            <View style={styles.colDossierName}>
+                                <Text style={styles.subTableCell}>{dossier.reference || `Dossier ${globalIdx + 1}`}</Text>
+                            </View>
+                            <View style={styles.colClient}>
+                                <Text style={styles.subTableCell}>{dossier.clientNom || '—'}</Text>
+                            </View>
+                            <View style={styles.colMontant}>
+                                <Text style={[styles.subTableCell, { fontFamily: 'Courier', textAlign: 'right' }]}>
+                                    {formatMoney(total)}
+                                </Text>
+                            </View>
+                            <View style={styles.colVersement}>
+                                <Text style={[styles.subTableCell, { fontFamily: 'Courier', color: '#16a34a', textAlign: 'right' }]}>
+                                    {formatMoney(versements)}
+                                </Text>
+                            </View>
+                            <View style={styles.colReste}>
+                                <Text style={[styles.subTableCell, { fontFamily: 'Courier', color: reste > 0 ? '#dc2626' : '#16a34a', textAlign: 'right' }]}>
+                                    {formatMoney(reste)}
+                                </Text>
+                            </View>
+                            <View style={styles.colStatutDossier}>
+                                <StatusBadge status={status} />
+                            </View>
+                        </View>
+                    );
+                })}
+
+                <View style={[styles.monthTotalRow, { marginTop: 5 }]}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.monthTotalLabel}>
+                            Suite du mois de {moisNom} (page {pageIndex + 1}/{totalPages})
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        );
+    };
+
+    // Rendre toutes les pages de dossiers
+    return (
+        <View>
+            {Array.from({ length: totalPages }, (_, i) => renderPageRows(i))}
         </View>
     );
 };
 
 // Composant pour un mois
-const MonthSection = ({ month, index }) => {
+const MonthSection = ({ month, index, forceNewPage = false }) => {
     const ca = safeNumber(month.ca);
     const encaisse = safeNumber(month.encaisse);
     const decaisse = safeNumber(month.decaisse);
     const marge = encaisse - decaisse;
-    const reste = ca - encaisse;
     const tauxRecouvrement = ca > 0 ? Math.round((encaisse / ca) * 100) : 0;
 
     return (
-        <View style={styles.monthSection} wrap={false}>
+        <View style={[styles.monthSection, forceNewPage && { breakBefore: 'page' }]} wrap={false}>
             <View style={styles.monthHeader}>
                 <Text style={styles.monthName}>
                     {index + 1}. {month.nom || `Mois ${index + 1}`}
@@ -583,7 +682,7 @@ const MonthSection = ({ month, index }) => {
                 </View>
             </View>
             
-            <MonthDossiersTable dossiers={month.dossiers || []} />
+            <MonthDossiersTable dossiers={month.dossiers || []} moisNom={month.nom} />
             
             <View style={styles.monthTotalRow}>
                 <View style={{ flex: 1 }}>
@@ -610,7 +709,7 @@ const BarChart = ({ data, title }) => {
     if (!data || data.length === 0) return null;
 
     return (
-        <View style={styles.chartContainer}>
+        <View style={styles.chartContainer} wrap={false}>
             <Text style={styles.chartTitle}>{title}</Text>
             {data.map((item, idx) => {
                 const percentage = safePercentage(item.percentage, 100);
@@ -644,7 +743,7 @@ const TotalSummary = ({ totals }) => {
     const safeTaux = isNaN(tauxRecouvrement) ? 0 : Math.min(Math.max(tauxRecouvrement, 0), 100);
 
     return (
-        <View style={styles.totalSection}>
+        <View style={styles.totalSection} wrap={false}>
             <Text style={styles.totalTitle}>RÉCAPITULATIF ANNUEL</Text>
 
             <View style={styles.totalRow}>
@@ -714,78 +813,146 @@ const TotalSummary = ({ totals }) => {
 // Composant principal
 export const RapportAnnuelPDF = ({ moisData, stats, entreprise, annee }) => {
     const safeMoisData = Array.isArray(moisData) ? moisData : [];
-    const moisParPage = 2;
-    const totalPages = Math.max(1, Math.ceil(safeMoisData.length / moisParPage));
     const currentDate = new Date().toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: 'long',
         year: 'numeric'
     });
 
-    const renderPage = (pageNumber) => {
-        const startIndex = (pageNumber - 1) * moisParPage;
-        const endIndex = Math.min(startIndex + moisParPage, safeMoisData.length);
-        const pageMois = safeMoisData.slice(startIndex, endIndex);
-        const isLastPage = pageNumber === totalPages;
+    // Configuration des limites de pages
+    const MAX_MONTHS_PER_PAGE = 2; // Maximum de mois par page
 
-        // Données pour le graphique (top 5 mois) - sécurisé
-        const topMois = [...safeMoisData]
-            .filter(m => safeNumber(m.ca) > 0)
-            .sort((a, b) => safeNumber(b.ca) - safeNumber(a.ca))
-            .slice(0, 5)
-            .map(m => ({
-                label: (m.nom || '').substring(0, 3),
-                value: safeNumber(m.ca),
-                percentage: safePercentage(m.ca, stats.caTotal)
-            }));
-
-        return (
-            <Page key={pageNumber} size="A4" style={styles.page} wrap>
-                <View style={styles.topBar} />
-
-                <View style={styles.header}>
-                    <ReportHeader
-                        stats={stats}
-                        entreprise={entreprise}
-                        currentDate={currentDate}
-                        annee={annee}
-                    />
-                </View>
-
-                {/* Graphique des meilleurs mois sur la première page */}
-                {pageNumber === 1 && topMois.length > 0 && (
-                    <BarChart data={topMois} title="Top 5 mois par chiffre d'affaires" />
-                )}
-
-                {/* Mois avec leurs dossiers */}
-                {pageMois.map((mois, idx) => (
-                    <MonthSection key={startIndex + idx} month={mois} index={startIndex + idx} />
-                ))}
-
-                {/* Totaux sur la dernière page */}
-                {isLastPage && <TotalSummary totals={stats} />}
-
-                {/* Pied de page */}
-                <View style={styles.footer} fixed>
-                    <Text>© {entreprise.nom || 'Entreprise'} · NINEA: {entreprise.ninea || '---'} · RCCM: {entreprise.rc || '---'}</Text>
-                    <Text>Rapport annuel {annee}</Text>
-                </View>
-
-                <Text style={styles.pageNumber} fixed>
-                    Page {pageNumber} / {totalPages}
-                </Text>
-            </Page>
-        );
+    // Calculer le nombre total de pages nécessaires
+    const calculateTotalPages = () => {
+        let totalPages = 0;
+        for (let i = 0; i < safeMoisData.length; i++) {
+            const month = safeMoisData[i];
+            const dossierCount = (month.dossiers || []).length;
+            const pagesForThisMonth = Math.max(1, Math.ceil(dossierCount / 15)); // 15 dossiers par page max
+            totalPages += pagesForThisMonth;
+        }
+        // Ajouter 1 pour la page de récapitulatif si nécessaire
+        return Math.ceil(totalPages / MAX_MONTHS_PER_PAGE) + 1;
     };
+
+    const renderPageContent = (pageNumber) => {
+        // Logique de pagination améliorée
+        const elements = [];
+        let currentPage = 1;
+        let monthIndex = 0;
+
+        while (monthIndex < safeMoisData.length && currentPage <= pageNumber) {
+            const month = safeMoisData[monthIndex];
+            const dossierCount = (month.dossiers || []).length;
+            const pagesForMonth = Math.max(1, Math.ceil(dossierCount / 15));
+
+            for (let subPage = 0; subPage < pagesForMonth; subPage++) {
+                if (currentPage === pageNumber) {
+                    // Créer une vue pour ce mois avec la sous-page appropriée
+                    const startIdx = subPage * 15;
+                    const endIdx = Math.min(startIdx + 15, dossierCount);
+                    const subDossiers = month.dossiers.slice(startIdx, endIdx);
+                    
+                    elements.push(
+                        <View key={`month-${monthIndex}-page-${subPage}`}>
+                            {subPage === 0 && (
+                                <MonthSection 
+                                    month={{...month, dossiers: subDossiers}} 
+                                    index={monthIndex}
+                                    forceNewPage={monthIndex > 0 && subPage === 0}
+                                />
+                            )}
+                            {subPage > 0 && (
+                                <View style={styles.monthSection}>
+                                    <View style={styles.monthHeader}>
+                                        <Text style={styles.monthName}>
+                                            {monthIndex + 1}. {month.nom} (suite)
+                                        </Text>
+                                        <Text style={styles.monthStats}>
+                                            {subDossiers.length} dossier(s) sur cette page
+                                        </Text>
+                                    </View>
+                                    <MonthDossiersTable dossiers={subDossiers} moisNom={month.nom} />
+                                </View>
+                            )}
+                        </View>
+                    );
+                }
+                currentPage++;
+            }
+            monthIndex++;
+        }
+
+        // Ajouter le récapitulatif sur la dernière page
+        if (currentPage === pageNumber + 1 && pageNumber > 0) {
+            elements.push(<TotalSummary key="total-summary" totals={stats} />);
+        }
+
+        return elements;
+    };
+
+    // Calculer le nombre total de pages
+    const getTotalPages = () => {
+        let total = 0;
+        for (const month of safeMoisData) {
+            total += Math.max(1, Math.ceil((month.dossiers || []).length / 15));
+        }
+        return total + 1; // +1 pour le récapitulatif
+    };
+
+    const totalPages = getTotalPages();
 
     return (
         <Document>
-            {Array.from({ length: totalPages }, (_, i) => renderPage(i + 1))}
+            {Array.from({ length: totalPages }, (_, pageNum) => {
+                const isLastPage = pageNum + 1 === totalPages;
+                const topMois = [...safeMoisData]
+                    .filter(m => safeNumber(m.ca) > 0)
+                    .sort((a, b) => safeNumber(b.ca) - safeNumber(a.ca))
+                    .slice(0, 5)
+                    .map(m => ({
+                        label: (m.nom || '').substring(0, 3),
+                        value: safeNumber(m.ca),
+                        percentage: safePercentage(m.ca, stats.caTotal)
+                    }));
+
+                return (
+                    <Page key={pageNum} size="A4" style={styles.page}>
+                        <View style={styles.topBar} />
+
+                        <View style={styles.header}>
+                            <ReportHeader
+                                stats={stats}
+                                entreprise={entreprise}
+                                currentDate={currentDate}
+                                annee={annee}
+                            />
+                        </View>
+
+                        {/* Graphique uniquement sur la première page */}
+                        {pageNum === 0 && topMois.length > 0 && (
+                            <BarChart data={topMois} title="Top 5 mois par chiffre d'affaires" />
+                        )}
+
+                        {/* Contenu principal de la page */}
+                        {renderPageContent(pageNum + 1)}
+
+                        {/* Pied de page fixe */}
+                        <View style={styles.footer} fixed>
+                            <Text>© {entreprise.nom || 'Entreprise'} · NINEA: {entreprise.ninea || '---'} · RCCM: {entreprise.rc || '---'} · Rapport annuel {annee}</Text>
+                            {/* <Text>Rapport annuel {annee}</Text> */}
+                        </View>
+
+                        <Text style={styles.pageNumber} fixed>
+                            Page {pageNum + 1} / {totalPages}
+                        </Text>
+                    </Page>
+                );
+            })}
         </Document>
     );
 };
 
-// Fonction de génération des données mensuelles
 // Fonction de génération des données mensuelles corrigée
 export const generateMonthlyReport = (dossiers, clients) => {
     const safeDossiers = Array.isArray(dossiers) ? dossiers : [];
@@ -893,6 +1060,7 @@ export const generateMonthlyReport = (dossiers, clients) => {
     
     return { moisData, stats };
 };
+
 // Fonction d'export
 export const PrintRapport = async (dossiers, clients, entreprise) => {
     try {
@@ -953,22 +1121,6 @@ export const DownloadRapportAnnuel = async (dossiers, clients, entreprise) => {
 };
 
 export const PrintRapportAnnuel = async (dossier, client, entreprise) => {
-    // const entreprise = {
-    //     nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
-    //     adresse: "19, Boulevard Djily Mbaye",
-    //     ville: "Dakar",
-    //     pays: "Sénégal",
-    //     ninea: "005553020",
-    //     rc: "SN-DKR-2015-13017",
-    //     telephone: "+221 33 822 48 67",
-    //     email: "elitetransit16@gmail.com"
-    // };
-
     const fileName = `dossier_${dossier.reference}_${client.name}.pdf`;
-
-    // Pour ouvrir dans une nouvelle fenêtre
-    //   await PrintRapport(dossier, client, entreprise);
-
-    // Ou pour télécharger directement
     await DownloadRapportAnnuel(dossier, client, entreprise, fileName);
 };
