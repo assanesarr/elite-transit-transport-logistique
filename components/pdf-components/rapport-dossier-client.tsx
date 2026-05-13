@@ -38,7 +38,6 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         backgroundColor: '#0f172a',
         paddingHorizontal: 12,
-        // paddingVertical: 0,
         marginBottom: 12,
     },
     headLeft: {
@@ -405,43 +404,8 @@ const styles = StyleSheet.create({
     },
 });
 
-// Composant d'en-tête avec nom du dossier et BL
-// const ReportHeader = ({ entreprise, dossier, currentDate, logoUrl }) => {
-//     // Construction du titre
-//     let title = dossier.dossierName || dossier.reference;
-//     if (dossier.bl) {
-//         title += `\n BL: ${dossier.bl}`;
-//     }
-
-//     return (
-//         <View style={styles.head}>
-//             <View style={styles.headLeft}>
-//                 {logoUrl && (
-//                     <Image src={logoUrl} style={styles.logo} />
-//                 )}
-//                 <View style={styles.companyInfo}>
-//                     <Text style={styles.companyName}>{entreprise.nom}</Text>
-//                     <Text style={styles.companySub}>
-//                         {entreprise.adresse} · {entreprise.ville}, {entreprise.pays}
-//                     </Text>
-//                     <Text style={styles.companySub}>
-//                         NINEA: {entreprise.ninea} · RCCM: {entreprise.rc}
-//                     </Text>
-//                     <Text style={styles.companySub}>
-//                         Tel: {entreprise.telephone} · Email: {entreprise.email}
-//                     </Text>
-//                 </View>
-//             </View>
-//             <View style={styles.headRight}>
-//                 <Text style={styles.reportTitle}>{title}</Text>
-//                 <Text style={styles.reportSubtitle}>Établi le {currentDate}</Text>
-//             </View>
-//         </View>
-//     );
-// };
-
-// Composant informations dossier
-const DossierInfo = ({ dossier, client }) => (
+// Composant informations dossier (version rapport)
+const DossierInfoRapport = ({ dossier, client }) => (
     <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Informations du dossier</Text>
 
@@ -482,6 +446,70 @@ const DossierInfo = ({ dossier, client }) => (
 
             <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Date échéance :</Text>
+                <Text style={styles.infoValue}>
+                    {dossier.dateEcheance ? new Date(dossier.dateEcheance).toLocaleDateString('fr-FR') : 'Non spécifiée'}
+                </Text>
+            </View>
+
+            {dossier.port && (
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Port :</Text>
+                    <Text style={styles.infoValue}>{dossier.port}</Text>
+                </View>
+            )}
+
+            {dossier.responsable && (
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Responsable :</Text>
+                    <Text style={styles.infoValue}>{dossier.responsable}</Text>
+                </View>
+            )}
+        </View>
+    </View>
+);
+
+// Composant informations facture
+const DossierInfoFacture = ({ dossier, client }) => (
+    <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Informations de la facture</Text>
+
+        <View style={styles.infoGrid}>
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Client :</Text>
+                <Text style={styles.infoValue}>{client?.name || 'Non spécifié'}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Référence facture :</Text>
+                <Text style={styles.infoValue}>{dossier.reference}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Nom du dossier :</Text>
+                <Text style={styles.infoValue}>{dossier.dossierName || 'Sans nom'}</Text>
+            </View>
+
+            {dossier.bl && (
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>BL :</Text>
+                    <Text style={styles.infoValue}>{dossier.bl}</Text>
+                </View>
+            )}
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Type :</Text>
+                <Text style={styles.infoValue}>{dossier.type || 'Non spécifié'}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Date d'émission :</Text>
+                <Text style={styles.infoValue}>
+                    {new Date().toLocaleDateString('fr-FR')}
+                </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Date d'échéance :</Text>
                 <Text style={styles.infoValue}>
                     {dossier.dateEcheance ? new Date(dossier.dateEcheance).toLocaleDateString('fr-FR') : 'Non spécifiée'}
                 </Text>
@@ -546,8 +574,8 @@ const DossierStatus = ({ dossier }) => {
     );
 };
 
-// Composant montants
-const DossierMontants = ({ dossier, totalVersements, reste, tauxPaiement }) => {
+// Composant montants (version rapport)
+const DossierMontantsRapport = ({ dossier, totalVersements, reste, tauxPaiement }) => {
     const isSold = reste <= 0;
 
     return (
@@ -581,6 +609,41 @@ const DossierMontants = ({ dossier, totalVersements, reste, tauxPaiement }) => {
                     </Text>
                 </View>
             )}
+        </View>
+    );
+};
+
+// Composant montants (version facture)
+const DossierMontantsFacture = ({ dossier, totalVersements, reste, tauxPaiement }) => {
+    const isSold = reste <= 0;
+    const hasTVA = dossier.tva === true;
+    const tva = hasTVA ? dossier.montant_total * 0.18 : 0;
+    const totalTTC = dossier.montant_total + tva;
+
+    return (
+        <View style={styles.montantsSection}>
+            <View style={[styles.montantCard, styles.montantCardBlue]}>
+                <Text style={styles.montantLabel}>Total HT</Text>
+                <Text style={[styles.montantValue, styles.montantValueBlue]}>
+                    {dossier.montant_total.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                </Text>
+            </View>
+
+            {hasTVA && (
+                <View style={[styles.montantCard, styles.montantCardOrange]}>
+                    <Text style={styles.montantLabel}>TVA (18%)</Text>
+                    <Text style={[styles.montantValue, styles.montantValueOrange]}>
+                        {tva.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                    </Text>
+                </View>
+            )}
+
+            <View style={[styles.montantCard, styles.montantCardGreen]}>
+                <Text style={styles.montantLabel}>Total TTC</Text>
+                <Text style={[styles.montantValue, styles.montantValueGreen]}>
+                    {totalTTC.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                </Text>
+            </View>
         </View>
     );
 };
@@ -636,14 +699,7 @@ const PrestationsTable = ({ prestations }) => {
 // Composant versements
 const VersementsTable = ({ versements }) => {
     if (!versements || versements.length === 0) {
-        return (
-            <View style={styles.versementsTable}>
-                <Text style={[styles.sectionTitle, { marginBottom: 5 }]}>Versements effectués</Text>
-                <View style={{ padding: 10, backgroundColor: '#f8fafc', borderRadius: 4, alignItems: 'center' }}>
-                    <Text style={{ color: '#64748b' }}>Aucun versement enregistré</Text>
-                </View>
-            </View>
-        );
+        return null;
     }
 
     return (
@@ -693,17 +749,10 @@ const VersementsTable = ({ versements }) => {
     );
 };
 
-// Composant décaissements par catégorie
+// Composant décaissements
 const PayementsTable = ({ payements }) => {
     if (!payements || payements.length === 0) {
-        return (
-            <View style={styles.decaissementsTable}>
-                <Text style={[styles.sectionTitle, { marginBottom: 5 }]}>Décaissements par catégorie</Text>
-                <View style={{ padding: 10, backgroundColor: '#f8fafc', borderRadius: 4, alignItems: 'center' }}>
-                    <Text style={{ color: '#64748b' }}>Aucun décaissement enregistré</Text>
-                </View>
-            </View>
-        );
+        return null;
     }
 
     return (
@@ -753,8 +802,8 @@ const PayementsTable = ({ payements }) => {
     );
 };
 
-// Composant récapitulatif final
-const FinalRecap = ({ dossier, totalVersements, totalPayements, reste, tauxPaiement }) => {
+// Composant récapitulatif (version rapport)
+const FinalRecapRapport = ({ dossier, totalVersements, totalPayements, reste, tauxPaiement }) => {
     const isSold = reste <= 0;
 
     if (isSold) {
@@ -841,6 +890,109 @@ const FinalRecap = ({ dossier, totalVersements, totalPayements, reste, tauxPaiem
     );
 };
 
+// Composant récapitulatif (version facture)
+const FinalRecapFacture = ({ dossier, totalVersements, totalPayements, reste, tauxPaiement }) => {
+    const isSold = reste <= 0;
+    const hasTVA = dossier.tva === true;
+    const tva = hasTVA ? dossier.montant_total * 0.18 : 0;
+    const totalTTC = dossier.montant_total + tva;
+    const netAPayer = isSold ? 0 : reste + tva;
+
+    if (isSold) {
+        return (
+            <View style={styles.recapSectionSold}>
+                <Text style={styles.recapTitleSold}>✅ FACTURE ACQUITTÉE</Text>
+
+                <View style={styles.recapRowSold}>
+                    <Text style={styles.recapLabelSold}>Total HT :</Text>
+                    <Text style={styles.recapValueSold}>
+                        {dossier.montant_total.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                    </Text>
+                </View>
+
+                {hasTVA && (
+                    <View style={styles.recapRowSold}>
+                        <Text style={styles.recapLabelSold}>TVA (18%) :</Text>
+                        <Text style={styles.recapValueSold}>
+                            {tva.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                        </Text>
+                    </View>
+                )}
+
+                <View style={styles.recapRowSold}>
+                    <Text style={styles.recapLabelSold}>Total TTC :</Text>
+                    <Text style={styles.recapValueGrandSold}>
+                        {totalTTC.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                    </Text>
+                </View>
+
+                <View style={styles.recapRowSoldLast}>
+                    <Text style={styles.recapLabelSold}>Montant total versé :</Text>
+                    <Text style={styles.recapValueGrandSold}>
+                        {totalVersements.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                    </Text>
+                </View>
+
+                <View style={styles.soldBadge}>
+                    <Text style={styles.soldBadgeText}>✓ FACTURE ACQUITTÉE ✓</Text>
+                </View>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.recapSection}>
+            <Text style={styles.recapTitle}>RÉCAPITULATIF DE LA FACTURE</Text>
+
+            <View style={styles.recapRow}>
+                <Text style={styles.recapLabel}>Total HT :</Text>
+                <Text style={styles.recapValue}>
+                    {dossier.montant_total.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                </Text>
+            </View>
+
+            {hasTVA && (
+                <View style={styles.recapRow}>
+                    <Text style={styles.recapLabel}>TVA (18%) :</Text>
+                    <Text style={styles.recapValue}>
+                        {tva.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                    </Text>
+                </View>
+            )}
+
+            <View style={styles.recapRow}>
+                <Text style={styles.recapLabel}>Total TTC :</Text>
+                <Text style={[styles.recapValue, { color: '#1e40af' }]}>
+                    {totalTTC.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                </Text>
+            </View>
+
+            <View style={styles.recapRow}>
+                <Text style={styles.recapLabel}>Total versé :</Text>
+                <Text style={[styles.recapValue, { color: '#16a34a' }]}>
+                    {totalVersements.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                </Text>
+            </View>
+
+            <View style={styles.recapRowLast}>
+                <Text style={styles.recapLabel}>NET À PAYER :</Text>
+                <Text style={styles.recapValueGrand}>
+                    {netAPayer.toLocaleString("fr-FR").replace(/\u202F/g, " ")} FCFA
+                </Text>
+            </View>
+
+            <View style={{ marginTop: 10 }}>
+                <Text style={styles.progressText}>
+                    Taux de paiement : {tauxPaiement}%
+                </Text>
+                <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${Math.min(tauxPaiement, 100)}%` }]} />
+                </View>
+            </View>
+        </View>
+    );
+};
+
 // Composant principal
 export const DossierReportPDF = ({ dossier, client, entreprise }) => {
     // Calculer les totaux
@@ -851,16 +1003,31 @@ export const DossierReportPDF = ({ dossier, client, entreprise }) => {
         ? Math.round((totalVersements / dossier.montant_total) * 100)
         : 0;
 
+    // Vérifier s'il y a des versements ou décaissements
+    const hasVersements = dossier.versement && dossier.versement.length > 0;
+    const hasPayements = dossier.payements && dossier.payements.length > 0;
+    
+    // Déterminer si on doit afficher une facture ou un rapport
+    // Facture uniquement s'il n'y a NI versements NI décaissements
+    const isInvoice = !hasVersements && !hasPayements;
+
     const currentDate = new Date().toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: 'long',
         year: 'numeric'
     });
 
-    let title = dossier.dossierName || dossier.reference;
+    let title = isInvoice 
+        ? `FACTURE N° ${dossier.reference}`
+        : (dossier.dossierName || dossier.reference);
+    
     if (dossier.bl) {
         title += `\n BL: ${dossier.bl}`;
     }
+
+    let subtitle = isInvoice 
+        ? `Date d'émission: ${currentDate}`
+        : `Établi le ${currentDate}`;
 
     return (
         <Document>
@@ -868,37 +1035,71 @@ export const DossierReportPDF = ({ dossier, client, entreprise }) => {
                 <View style={styles.topBar} />
 
                 <View style={styles.header}>
-                    <ReportHeader entreprise={entreprise} title={title} subtitle={currentDate} logoUrl={"/logo.jpeg"} />
+                    <ReportHeader entreprise={entreprise} title={title} subtitle={subtitle} logoUrl={"/logo.jpeg"} />
                 </View>
 
-                <DossierInfo dossier={dossier} client={client} />
-                {/* <DossierStatus dossier={dossier} /> */}
-                <DossierMontants
-                    dossier={dossier}
-                    totalVersements={totalVersements}
-                    reste={reste}
-                    tauxPaiement={tauxPaiement}
-                />
+                {/* Afficher les infos selon le type */}
+                {isInvoice ? (
+                    <DossierInfoFacture dossier={dossier} client={client} />
+                ) : (
+                    <>
+                        <DossierInfoRapport dossier={dossier} client={client} />
+                        {/* <DossierStatus dossier={dossier} /> */}
+                    </>
+                )}
+                
+                {/* Afficher les montants selon le type */}
+                {isInvoice ? (
+                    <DossierMontantsFacture
+                        dossier={dossier}
+                        totalVersements={totalVersements}
+                        reste={reste}
+                        tauxPaiement={tauxPaiement}
+                    />
+                ) : (
+                    <DossierMontantsRapport
+                        dossier={dossier}
+                        totalVersements={totalVersements}
+                        reste={reste}
+                        tauxPaiement={tauxPaiement}
+                    />
+                )}
 
                 <PrestationsTable prestations={dossier.prestations} />
-                <VersementsTable versements={dossier.versement} />
-                <PayementsTable payements={dossier.payements} />
-                <FinalRecap
-                    dossier={dossier}
-                    totalVersements={totalVersements}
-                    totalPayements={totalPayements}
-                    reste={reste}
-                    tauxPaiement={tauxPaiement}
-                />
+                
+                {/* Afficher les versements uniquement s'il y en a */}
+                {hasVersements && <VersementsTable versements={dossier.versement} />}
+                
+                {/* Afficher les décaissements uniquement s'il y en a */}
+                {hasPayements && <PayementsTable payements={dossier.payements} />}
+                
+                {/* Afficher le récapitulatif selon le type */}
+                {isInvoice ? (
+                    <FinalRecapFacture
+                        dossier={dossier}
+                        totalVersements={totalVersements}
+                        totalPayements={totalPayements}
+                        reste={reste}
+                        tauxPaiement={tauxPaiement}
+                    />
+                ) : (
+                    <FinalRecapRapport
+                        dossier={dossier}
+                        totalVersements={totalVersements}
+                        totalPayements={totalPayements}
+                        reste={reste}
+                        tauxPaiement={tauxPaiement}
+                    />
+                )}
 
                 <View style={styles.footer} fixed>
                     <Text>© {entreprise.nom} · NINEA: {entreprise.ninea} · RCCM: {entreprise.rc}</Text>
-                    <Text>Référence: {dossier.reference}</Text>
+                    <Text>{isInvoice ? `Facture N°: ${dossier.reference}` : `Référence: ${dossier.reference}`}</Text>
                 </View>
 
-                <Text style={styles.pageNumber} fixed>
+                {/* <Text style={styles.pageNumber} fixed>
                     Page 1 / 1
-                </Text>
+                </Text> */}
             </Page>
         </Document>
     );
@@ -926,7 +1127,7 @@ export const printDossierReport = async (dossier, client, entreprise) => {
             URL.revokeObjectURL(url);
         }, 100);
     } catch (error) {
-        console.error("Erreur lors de la génération du rapport:", error);
+        console.error("Erreur lors de la génération du document:", error);
     }
 };
 
@@ -952,73 +1153,19 @@ export const downloadDossierReport = async (dossier, client, entreprise, fileNam
             URL.revokeObjectURL(url);
         }, 100);
     } catch (error) {
-        console.error("Erreur lors du téléchargement du rapport:", error);
+        console.error("Erreur lors du téléchargement du document:", error);
     }
 };
 
-// Dans votre composant
+// Génération du document
 export const GenerateDossierReport = async (dossier, client, entreprise) => {
-    // const entreprise = {
-    //     nom: "ELITE TRANSIT TRANSPORT LOGISTIQUE",
-    //     adresse: "19, Boulevard Djily Mbaye",
-    //     ville: "Dakar",
-    //     pays: "Sénégal",
-    //     ninea: "005553020",
-    //     rc: "SN-DKR-2015-13017",
-    //     telephone: "+221 33 822 48 67",
-    //     email: "elitetransit16@gmail.com"
-    // };
-
-    const fileName = `dossier_${dossier.reference}_${client.name}.pdf`;
-
-    // Pour ouvrir dans une nouvelle fenêtre
-    //   await printDossierReport(dossier, client, entreprise);
-
-    // Ou pour télécharger directement
+    const hasVersements = dossier.versement && dossier.versement.length > 0;
+    const hasPayements = dossier.payements && dossier.payements.length > 0;
+    const isInvoice = !hasVersements && !hasPayements;
+    
+    const fileName = isInvoice 
+        ? `facture_${dossier.reference}_${client.name}.pdf`
+        : `rapport_${dossier.reference}_${client.name}.pdf`;
+    
     await downloadDossierReport(dossier, client, entreprise, fileName);
-};
-
-// Exemple d'appel avec vos données
-const handleViewDossierReport = () => {
-    const dossier = {
-        id: "1",
-        dossierName: "Importation Matériel",
-        reference: "IMP-2024-001",
-        clientId: "client-1",
-        type: "Importation",
-        description: "Importation de matériel électronique",
-        dateOuverture: "2024-01-10",
-        dateEcheance: "2024-03-10",
-        priorite: "haute",
-        responsable: "M. Diallo",
-        port: "Dakar",
-        bl: "BL-2024-001",
-        montant_total: 2500000,
-        versement: [
-            { date: "2024-01-15", montant: 1000000, method: "Virement", mode: "Banque", ref: "VIR-001" },
-            { date: "2024-02-10", montant: 500000, method: "Espèces", mode: "Cash", ref: "ESP-001" }
-        ],
-        payements: [
-            { date: "2024-01-20", montant: 300000, ref: "PAY-001", method: "Virement", mode: "Banque", payement: "Frais de douane", note: "Paiement douane" },
-            { date: "2024-01-25", montant: 200000, ref: "PAY-002", method: "Espèces", mode: "Cash", payement: "Transport", note: "Transport local" },
-            { date: "2024-02-01", montant: 150000, ref: "PAY-003", method: "Chèque", mode: "Chèque", payement: "Frais administratifs", note: "Documents" }
-        ],
-        statut: "en_cours",
-        createdAt: "2024-01-10",
-        prestations: [
-            { label: "Frais de douane", montant: 800000 },
-            { label: "Transport maritime", montant: 1200000 },
-            { label: "Transport terrestre", montant: 300000 },
-            { label: "Frais de dossier", montant: 200000 }
-        ]
-    };
-
-    const client = {
-        name: "Jean Dupont",
-        phone: "+221 77 123 45 67",
-        email: "jean.dupont@email.com",
-        adresse: "Dakar, Sénégal"
-    };
-
-    generateDossierReport(dossier, client);
 };

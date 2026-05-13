@@ -21,11 +21,11 @@ import { useModalDecaissementStore } from "@/store/modal/decaissement";
 import { useAlertStore } from "@/store/alertStore";
 import { entreprise } from "@/app/data"
 import { useRouter } from "next/navigation";
-import { UserAvatar } from "./card-user";
 import { GenerateDossierReport } from "@/components/pdf-components/rapport-dossier-client";
 import { GenerateClientReport } from "@/components/pdf-components/raport-client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UserAvatar } from "./user-avatar";
 
 type ViewType = "main" | "details";
 
@@ -537,47 +537,52 @@ function ViewDossier({ dossier }: { dossier: any }) {
 
                     {/* Info dossier */}
                     <div className="bg-slate-900 px-5 py-4 flex items-center justify-between">
-                        <div className="text-right">
+                        <div className="text-left">
                             <p className="text-slate-400 text-xs">B/L · LTA · AWB</p>
                             <p className="text-white text-sm font-mono font-semibold">{formatBLNumber(d.bl as string).formatted}</p>
                         </div>
                     </div>
 
                     {/* Prestations */}
-                    {/* <Card className="rounded-2xl border-slate-100 shadow-sm">
-                        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-slate-700">Détail des prestations</CardTitle></CardHeader>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-slate-50 border-slate-100">
-                                        {["Prestation", "Montant HT", "% du total"].map(h => (
-                                            <TableHead key={h} className="text-xs font-semibold text-slate-400 uppercase tracking-wider first:pl-5 last:pr-5">{h}</TableHead>
-                                        ))}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {d.prestations.map((p, i) => (
-                                        <TableRow key={i} className="border-slate-50">
-                                            <TableCell className="pl-5 text-sm text-slate-700">{p.label}</TableCell>
-                                            <TableCell className="font-semibold text-slate-800 tabular-nums text-sm">{fmt(p.montant)}</TableCell>
-                                            <TableCell className="pr-5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-1.5 bg-slate-100 rounded-full w-16 overflow-hidden">
-                                                        <div className="h-1.5 bg-blue-400 rounded-full" style={{ width: `${Math.round(p.montant / d.montantTotal * 100)}%` }} />
-                                                    </div>
-                                                    <span className="text-xs text-slate-400">{Math.round(p.montant / d.montantTotal * 100)}%</span>
-                                                </div>
-                                            </TableCell>
+                    {d.prestations && d.prestations.length > 0 && (
+                        <Card className="rounded-2xl border-slate-100 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-sm font-semibold text-slate-700">Détail des prestations</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-slate-50 border-slate-100">
+                                            {["Prestation", "Montant HT", "% du total"].map(h => (
+                                                <TableHead key={h} className="text-xs font-semibold text-slate-400 uppercase tracking-wider first:pl-5 last:pr-5">{h}</TableHead>
+                                            ))}
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                            <div className="flex justify-between items-center px-5 py-3 border-t border-slate-100 bg-slate-50/60">
-                                <span className="text-sm font-bold text-slate-700">Total</span>
-                                <span className="text-base font-black text-slate-900 tabular-nums">{fmt(d.montantTotal)}</span>
-                            </div>
-                        </CardContent>
-                    </Card> */}
+                                    </TableHeader>
+                                    <TableBody>
+                                        {d.prestations.map((p: any, i: number) => (
+                                            <TableRow key={i} className="border-slate-50">
+                                                <TableCell className="pl-5 text-sm text-slate-700">{p.label}</TableCell>
+                                                <TableCell className="font-semibold text-slate-800 tabular-nums text-sm">{fmt(p.montant)}</TableCell>
+                                                <TableCell className="pr-5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1.5 bg-slate-100 rounded-full w-16 overflow-hidden">
+                                                            <div className="h-1.5 bg-blue-400 rounded-full" style={{ width: `${Math.round(p.montant / d.montant_total * 100)}%` }} />
+                                                        </div>
+                                                        <span className="text-xs text-slate-400">{Math.round(p.montant / d.montant_total * 100)}%</span>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                <div className="flex justify-between items-center px-5 py-3 border-t border-slate-100 bg-slate-50/60">
+                                    <span className="text-sm font-bold text-slate-700">Total</span>
+                                    <span className="text-base font-black text-slate-900 tabular-nums">{fmt(d.montant_total)}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
 
                     {/* ── Encaissements reçus ── */}
                     <Card className="rounded-2xl border-slate-100 shadow-sm">

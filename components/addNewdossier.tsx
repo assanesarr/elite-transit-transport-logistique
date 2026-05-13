@@ -11,7 +11,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,17 +18,24 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { cn, fmt, formatBLNumber, getNextNumero, today } from "@/lib/utils"
-import { useAgentsStore } from "@/store/agentStore"
 import { useClientsStore } from "@/store/clientStore"
 import { useDossiersStore } from "@/store/useDossiersStore"
-import { Save } from "lucide-react"
+import { Save, FolderOpen, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { startTransition, useState } from "react"
+import { startTransition, useState, useEffect, useMemo } from "react"
 import { toast } from "sonner"
+import { TYPES_PRESTATION } from "@/app/data"
 
 export default function AddNewdossier() {
     const { dossiers, isOpenDos, setIsOpenDos } = useDossiersStore(state => state)
@@ -39,15 +45,114 @@ export default function AddNewdossier() {
 
     const [openPop, setOpenPop] = useState(false)
     const [date, setDate] = useState<Date | undefined>(new Date())
+    const [clientSearchValue, setClientSearchValue] = useState("")
 
     const clients = useClientsStore(state => state.clients)
-    const [formDossier, setFormDossier] = useState({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
+    const [formDossier, setFormDossier] = useState({
+        clientId: "",
+        clientName: "",
+        clientDossiersCount: 0,
+        type: "Dédouanement import",
+        description: "",
+        dateEcheance: "",
+        priorite: "normale",
+        responsable: "",
+        port: "Port autonome de dakar",
+        bl: "",
+        dossierName: "",
+        prestations: [{ label: "", montant: "" }]
+    });
+
+    // Calculer le nombre de dossiers par client
+    const dossiersCountByClient = useMemo(() => {
+        const countMap = new Map();
+        dossiers.forEach(dossier => {
+            const clientId = dossier.clientId;
+            countMap.set(clientId, (countMap.get(clientId) || 0) + 1);
+        });
+        return countMap;
+    }, [dossiers]);
+
+    // Filtrer les clients en fonction de la recherche
+    const filteredClients = useMemo(() => {
+        if (!clientSearchValue.trim()) {
+            // Si pas de recherche, afficher tous les clients par ordre alphabétique
+            return clients
+                .map(client => ({
+                    ...client,
+                    dossiersCount: dossiersCountByClient.get(client.id) || 0
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name)); // Tri alphabétique
+        }
+
+        const searchLower = clientSearchValue.toLowerCase();
+        return clients
+            .filter(client =>
+                client.name.toLowerCase().includes(searchLower) ||
+                (client.email && client.email.toLowerCase().includes(searchLower)) ||
+                (client.phone && client.phone.includes(clientSearchValue))
+            )
+            .map(client => ({
+                ...client,
+                dossiersCount: dossiersCountByClient.get(client.id) || 0
+            }))
+            .sort((a, b) => {
+                // Priorité aux noms qui commencent par la recherche
+                const aStartsWith = a.name.toLowerCase().startsWith(searchLower);
+                const bStartsWith = b.name.toLowerCase().startsWith(searchLower);
+                if (aStartsWith && !bStartsWith) return -1;
+                if (!aStartsWith && bStartsWith) return 1;
+                // Ensuite par ordre alphabétique
+                return a.name.localeCompare(b.name);
+            });
+    }, [clients, clientSearchValue, dossiersCountByClient]);
+
+    // Mettre à jour les infos du client quand l'ID change
+    useEffect(() => {
+        if (formDossier.clientId) {
+            const selectedClient = clients.find(c => String(c.id) === formDossier.clientId)
+            if (selectedClient) {
+                const dossiersCount = dossiersCountByClient.get(selectedClient.id) || 0
+                setFormDossier(f => ({
+                    ...f,
+                    clientName: selectedClient.name,
+                    clientDossiersCount: dossiersCount
+                }))
+                setClientSearchValue(selectedClient.name)
+            }
+        } else {
+            setFormDossier(f => ({ ...f, clientName: "", clientDossiersCount: 0 }))
+            setClientSearchValue("")
+        }
+    }, [formDossier.clientId, clients, dossiersCountByClient])
 
     if (!isOpenDos) return null;
+
     /* ── Ajouter dossier ── */
     const ajouterDossier = async () => {
         setLoading(true)
-        if (!formDossier.clientId || !formDossier.description) return;
+        if (!formDossier.clientId || !formDossier.description) {
+            toast.error("Veuillez remplir tous les champs obligatoires")
+            setLoading(false)
+            return;
+        }
+        if (formDossier.prestations.some(p => (p.label && !p.montant) || (!p.label && p.montant))) {
+            toast.error("Chaque ligne de prestation doit avoir un libellé et un montant")
+            setLoading(false)
+            return;
+        }
+        if (formDossier.dossierName.trim() === "") {
+            toast.error("Le champ Dossier Name est obligatoire")
+            setLoading(false)
+            return;
+        }
+
+        if (!formDossier.bl) {
+            toast.error("Le numéro B/L est obligatoire")
+            setLoading(false)
+            return;
+        }
+
         const total = formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0);
         const ref: string = getNextNumero(dossiers)
         const payload = {
@@ -63,7 +168,7 @@ export default function AddNewdossier() {
             montant_total: total,
             prestations: formDossier.prestations.filter(p => p.label && p.montant).map(p => ({ ...p, montant: parseInt(p.montant) })),
             priorite: formDossier.priorite,
-            port: formDossier.port,
+            port: formDossier.port || "Port autonome de dakar",
             bl: formDossier.bl,
             createdAt: new Date().toISOString(),
         };
@@ -82,159 +187,350 @@ export default function AddNewdossier() {
             setLoading(false);
             return;
         }
-        const d = await res.json()
-        const data: Dossier[] = [{ ...d }, ...dossiers]
+
         route.refresh()
-        // setDossiers(data);
         setLoading(false)
         toast.success('✅ Enregistrement effectué avec succès')
-        setFormDossier({ clientId: "", type: "Dédouanement import", description: "", dateEcheance: "", priorite: "normale", responsable: "", port: "", bl: "", dossierName: "", prestations: [{ label: "", montant: "" }] });
+        setFormDossier({
+            clientId: "",
+            clientName: "",
+            clientDossiersCount: 0,
+            type: "Dédouanement import",
+            description: "",
+            dateEcheance: "",
+            priorite: "normale",
+            responsable: "",
+            port: "Port autonome de dakar",
+            bl: "",
+            dossierName: "",
+            prestations: [{ label: "", montant: "" }]
+        });
+        setClientSearchValue("")
         setIsOpenDos(false)
     };
 
+    const handleSelectClient = (clientId: string, clientName: string, dossiersCount: number) => {
+        setFormDossier(f => ({ ...f, clientId, clientName, clientDossiersCount: dossiersCount }))
+        setClientSearchValue(clientName)
+    }
+
+    const clearSelectedClient = () => {
+        setFormDossier(f => ({ ...f, clientId: "", clientName: "", clientDossiersCount: 0 }))
+        setClientSearchValue("")
+    }
+
+    // Formater le nombre de dossiers avec le bon pluriel
+    const formatDossierCount = (count: number) => {
+        if (count === 0) return "Aucun dossier";
+        if (count === 1) return "1 dossier";
+        return `${count} dossiers`;
+    }
+
     return (
         <Dialog open={isOpenDos} onOpenChange={setIsOpenDos}>
-            <DialogContent className="p-0 no-scrollbar max-h-screen overflow-y-auto">
-                <DialogHeader className="bg-slate-900 px-6 py-4 rounded-t-lg sticky top-0">
-                    <DialogTitle className="text-white font-bold">Nouveau dossier</DialogTitle>
+            <DialogContent className="p-0 no-scrollbar max-h-screen overflow-y-auto sm:max-w-2xl">
+                <DialogHeader className="bg-linear-to-r from-slate-900 to-slate-800 px-6 py-4 rounded-t-lg sticky top-0 z-10">
+                    <DialogTitle className="text-white font-bold text-xl">Nouveau dossier</DialogTitle>
                 </DialogHeader>
-                <div className="bg-white rounded-2xl w-full max-w-lg border border-slate-100 max-h-[90vh] overflow-y-auto">
-                    <div className="p-6 space-y-4">
-                        <div className="grid grid-cols-1 gap-3">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Client *</label>
-                                <Select value={formDossier.clientId} onValueChange={v => setFormDossier(f => ({ ...f, clientId: v }))}>
-                                    <SelectTrigger className="w-full rounded-xl"><SelectValue placeholder="Sélectionner…" /></SelectTrigger>
-                                    <SelectContent>
-                                        {[...clients]
-                                            .sort((a, b) => a.name.localeCompare(b.name))
-                                            .map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)
-                                        }
-                                        <Button variant="outline" size="sm" className="w-full" onClick={() => { setIsOpenDos(false); startTransition(() => route.push("/dashboard/clients/?r=new")) }} >Ajouter un nouveau client</Button>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Dossier N *</label>
-                                <Input placeholder="EX: DOS-2026-001" value={formDossier.dossierName}
-                                    onChange={e => setFormDossier(f => ({ ...f, dossierName: e.target.value }))} className="rounded-xl" />
-                            </div>
 
-                            {/* <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Type de prestation</label>
-                                <Select value={formDossier.type} onValueChange={v => setFormDossier(f => ({ ...f, type: v }))}>
-                                    <SelectTrigger className="w-full rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{typesPrestation && typesPrestation.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div> */}
-                        </div>
-                        <label className={cn("flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none transition-colors",
-                            tva ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-200 hover:border-slate-300")}>
-                            <input type="checkbox" checked={tva as boolean} onChange={e => setTva(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
-                            <div>
-                                <div className="text-sm font-semibold text-slate-800">TVA 18%</div>
-                                <div className="text-xs text-slate-400">TVA Aprique</div>
-                            </div>
-                            {tva && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
-                        </label>
+                <div className="bg-white rounded-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="p-6 space-y-4">
+                        {/* Sélection Client avec Combobox */}
                         <div>
-                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Description *</label>
-                            <Input placeholder="ex: Conteneur 40HC électroniques — Chine" value={formDossier.description}
-                                onChange={e => setFormDossier(f => ({ ...f, description: e.target.value }))} className="rounded-xl" />
+                            <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
+                                Client *
+                            </label>
+
+                            {!formDossier.clientId ? (
+                                <div className="relative">
+                                    <Command className="rounded-lg border shadow-md" shouldFilter={false}>
+                                        <div className="flex items-center border-b px-3">
+                                            <CommandInput
+                                                placeholder="Rechercher un client par nom, email ou téléphone..."
+                                                value={clientSearchValue}
+                                                onValueChange={setClientSearchValue}
+                                                className="border-0 focus:ring-0 h-11 w-full"
+                                            />
+                                            {clientSearchValue && (
+                                                <button
+                                                    onClick={() => setClientSearchValue("")}
+                                                    className="text-gray-400 hover:text-gray-600"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+
+                                        </div>
+                                        <CommandList>
+                                            <CommandEmpty>
+                                                <div className="py-6 text-center">
+                                                    <p className="text-sm text-gray-500">Aucun client trouvé pour "{clientSearchValue}"</p>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="mt-2"
+                                                        onClick={() => {
+                                                            setIsOpenDos(false);
+                                                            startTransition(() => route.push("/dashboard/clients/?r=new"))
+                                                        }}
+                                                    >
+                                                        + Ajouter un nouveau client
+                                                    </Button>
+                                                </div>
+                                            </CommandEmpty>
+                                            <CommandGroup heading="Clients">
+                                                {filteredClients.map((client) => (
+                                                    <CommandItem
+                                                        key={client.id}
+                                                        value={client.name}
+                                                        onSelect={() => handleSelectClient(String(client.id), client.name, client.dossiersCount)}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <div className="flex flex-col w-full">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="font-medium">{client.name}</span>
+                                                                <span className={cn(
+                                                                    "text-xs px-2 py-0.5 rounded-full",
+                                                                    client.dossiersCount > 0 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                                                                )}>
+                                                                    <FolderOpen className="w-3 h-3 inline mr-1" />
+                                                                    {client.dossiersCount}
+                                                                </span>
+                                                            </div>
+                                                            {(client.email || client.phone) && (
+                                                                <span className="text-xs text-gray-500 mt-1">
+                                                                    {client.email && `📧 ${client.email}`}
+                                                                    {client.email && client.phone && " • "}
+                                                                    {client.phone && `📱 ${client.phone}`}
+                                                                </span>
+                                                            )}
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                {formatDossierCount(client.dossiersCount)} au total
+                                                            </div>
+                                                        </div>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-4 bg-linear-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="font-semibold text-emerald-900 text-lg">{formDossier.clientName}</div>
+                                            <div className={cn(
+                                                "text-xs px-2 py-0.5 rounded-full font-medium",
+                                                formDossier.clientDossiersCount > 0 ? "bg-emerald-200 text-emerald-800" : "bg-gray-200 text-gray-600"
+                                            )}>
+                                                <FolderOpen className="w-3 h-3 inline mr-1" />
+                                                {formDossier.clientDossiersCount} dossier{formDossier.clientDossiersCount !== 1 ? 's' : ''}
+                                            </div>
+                                        </div>
+                                        {clients.find(c => String(c.id) === formDossier.clientId)?.email && (
+                                            <div className="text-sm text-emerald-700">
+                                                📧 {clients.find(c => String(c.id) === formDossier.clientId)?.email}
+                                            </div>
+                                        )}
+                                        {clients.find(c => String(c.id) === formDossier.clientId)?.phone && (
+                                            <div className="text-sm text-emerald-700">
+                                                📱 {clients.find(c => String(c.id) === formDossier.clientId)?.phone}
+                                            </div>
+                                        )}
+                                        <div className="text-xs text-emerald-600 mt-2 font-medium">
+                                            📊 {formatDossierCount(formDossier.clientDossiersCount)} existant{formDossier.clientDossiersCount !== 1 ? 's' : ''}
+                                        </div>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={clearSelectedClient}
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                        ✕
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Priorité</label>
-                                <Select value={formDossier.priorite} onValueChange={v => setFormDossier(f => ({ ...f, priorite: v }))}>
-                                    <SelectTrigger className="w-full rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{["urgente", "haute", "normale"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Date échéance</label>
-                                {/* <Input type="date" value={formDossier.dateEcheance} onChange={e => setFormDossier(f => ({ ...f, dateEcheance: e.target.value }))} className="rounded-xl" /> */}
-                                <Popover open={openPop} onOpenChange={setOpenPop}>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full rounded-xl justify-start font-normal">
-                                            {date ? date.toISOString().split("T")[0] : "Select date"}
-                                        </Button>
-                                        {/* <Button variant="outline" id="date" className="justify-start font-normal">{date ? date.toLocaleDateString() : "Select date"}</Button> */}
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={date}
-                                            defaultMonth={date}
-                                            captionLayout="dropdown"
-                                            onSelect={(date) => {
-                                                setDate(date)
-                                                setFormDossier(f => ({ ...f, dateEcheance: date ? date.toISOString().split("T")[0] : "" }))
-                                                setOpenPop(false)
-                                            }}
+
+                        {/* Formulaire complet - affiché seulement si un client est sélectionné */}
+                        {formDossier.clientId && (
+                            <>
+                                <div className="border-t border-slate-200 my-4"></div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Dossier N *</label>
+                                        <Input
+                                            placeholder="EX: DOS-2026-001"
+                                            value={formDossier.dossierName}
+                                            onChange={e => setFormDossier(f => ({ ...f, dossierName: e.target.value }))}
+                                            className="rounded-xl"
                                         />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Port / Aéroport</label>
-                                <Input placeholder="ex: Port Dakar" value={formDossier.port}
-                                    onChange={e => setFormDossier(f => ({ ...f, port: e.target.value }))} className="rounded-xl" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">B/L · LTA · AWB</label>
-                                <Input placeholder="ex: BL-SH-2026-4521" value={formatBLNumber(formDossier.bl).formatted}
-                                    onChange={e => setFormDossier(f => ({ ...f, bl: e.target.value }))} className="rounded-xl" />
-                            </div>
-                        </div>
-                        {/* Prestations */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lignes de prestation</label>
-                                <button onClick={() => setFormDossier(f => ({ ...f, prestations: [...f.prestations, { label: "", montant: "" }] }))}
-                                    className="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Ajouter ligne</button>
-                            </div>
-                            <div className="space-y-2">
-                                {formDossier.prestations.map((p, i) => (
-                                    <div key={i} className="flex gap-2 items-center">
-                                        <Input placeholder="Libellé prestation" value={p.label}
-                                            onChange={e => setFormDossier(f => ({ ...f, prestations: f.prestations.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))}
-                                            className="rounded-xl flex-1 text-sm" />
-                                        <Input type="number" placeholder="Montant" value={p.montant}
-                                            onChange={e => setFormDossier(f => ({ ...f, prestations: f.prestations.map((x, j) => j === i ? { ...x, montant: e.target.value } : x) }))}
-                                            className="rounded-xl w-32 text-sm" />
-                                        {formDossier.prestations.length > 1 && (
-                                            <button onClick={() => setFormDossier(f => ({ ...f, prestations: f.prestations.filter((_, j) => j !== i) }))}
-                                                className="text-slate-300 hover:text-rose-400 shrink-0">✕</button>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Type de prestation</label>
+                                        <Select value={formDossier.type} onValueChange={v => setFormDossier(f => ({ ...f, type: v }))}>
+                                            <SelectTrigger className="w-full rounded-xl"><SelectValue /></SelectTrigger>
+                                            <SelectContent>{TYPES_PRESTATION.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <label className={cn("flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none transition-colors",
+                                    tva ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-200 hover:border-slate-300")}>
+                                    <input type="checkbox" checked={tva as boolean} onChange={e => setTva(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
+                                    <div>
+                                        <div className="text-sm font-semibold text-slate-800">TVA 18%</div>
+                                        <div className="text-xs text-slate-400">TVA Afrique</div>
+                                    </div>
+                                    {tva && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
+                                </label>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Description *</label>
+                                    <Input
+                                        placeholder="ex: Conteneur 40HC électroniques — Chine"
+                                        value={formDossier.description}
+                                        onChange={e => setFormDossier(f => ({ ...f, description: e.target.value }))}
+                                        className="rounded-xl"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Priorité</label>
+                                        <Select value={formDossier.priorite} onValueChange={v => setFormDossier(f => ({ ...f, priorite: v }))}>
+                                            <SelectTrigger className="w-full rounded-xl">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[
+                                                    { value: "urgente", label: "🔴 Urgente", color: "text-red-600" },
+                                                    { value: "haute", label: "🟠 Haute", color: "text-orange-600" },
+                                                    { value: "normale", label: "🟢 Normale", color: "text-green-600" }
+                                                ].map(p => (
+                                                    <SelectItem key={p.value} value={p.value} className={p.color}>
+                                                        {p.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Date échéance</label>
+                                        <Popover open={openPop} onOpenChange={setOpenPop}>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className="w-full rounded-xl justify-start font-normal">
+                                                    {date ? date.toISOString().split("T")[0] : "Sélectionner une date"}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={date}
+                                                    defaultMonth={date}
+                                                    captionLayout="dropdown"
+                                                    onSelect={(date) => {
+                                                        setDate(date)
+                                                        setFormDossier(f => ({ ...f, dateEcheance: date ? date.toISOString().split("T")[0] : "" }))
+                                                        setOpenPop(false)
+                                                    }}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Port / Aéroport</label>
+                                        <Input
+                                            placeholder="ex: Port Dakar"
+                                            value={formDossier.port}
+                                            onChange={e => setFormDossier(f => ({ ...f, port: e.target.value }))}
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">B/L · LTA · AWB</label>
+                                        <Input
+                                            placeholder="ex: BL-SH-2026-4521"
+                                            value={formatBLNumber(formDossier.bl).formatted}
+                                            onChange={e => setFormDossier(f => ({ ...f, bl: e.target.value }))}
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Prestations */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lignes de prestation</label>
+                                        <button
+                                            onClick={() => setFormDossier(f => ({ ...f, prestations: [...f.prestations, { label: "", montant: "" }] }))}
+                                            className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-full font-medium transition-colors"
+                                        >
+                                            + Ajouter ligne
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {formDossier.prestations.map((p, i) => (
+                                            <div key={i} className="flex gap-2 items-center">
+                                                <Input
+                                                    placeholder="Libellé prestation"
+                                                    value={p.label}
+                                                    onChange={e => setFormDossier(f => ({ ...f, prestations: f.prestations.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))}
+                                                    className="rounded-xl flex-1 text-sm"
+                                                />
+                                                <Input
+                                                    type="number"
+                                                    placeholder="Montant"
+                                                    value={p.montant}
+                                                    onChange={e => setFormDossier(f => ({ ...f, prestations: f.prestations.map((x, j) => j === i ? { ...x, montant: e.target.value } : x) }))}
+                                                    className="rounded-xl w-32 text-sm"
+                                                />
+                                                {formDossier.prestations.length > 1 && (
+                                                    <button
+                                                        onClick={() => setFormDossier(f => ({ ...f, prestations: f.prestations.filter((_, j) => j !== i) }))}
+                                                        className="text-slate-300 hover:text-rose-500 transition-colors shrink-0"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-3 p-3 bg-slate-50 rounded-lg text-right">
+                                        <div className="text-sm text-slate-600">
+                                            Total HT : <span className="font-bold text-slate-800 text-lg">
+                                                {fmt(formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0))}
+                                            </span>
+                                        </div>
+                                        {tva && (
+                                            <div className="text-xs text-slate-500 mt-1">
+                                                TVA (18%) : {fmt((formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0) * 0.18))}
+                                            </div>
                                         )}
                                     </div>
-                                ))}
-                            </div>
-                            <div className="mt-2 text-right text-xs text-slate-400">
-                                Total : <span className="font-bold text-slate-700">
-                                    {fmt(formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0))}
-                                </span>
-                            </div>
-                        </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
-                <DialogFooter className="gap-3 p-2">
+
+                <DialogFooter className="gap-3 p-4 bg-slate-50 rounded-b-lg">
                     <DialogClose asChild>
                         <CancelBtn />
                     </DialogClose>
                     <Button
                         type="submit"
                         onClick={ajouterDossier}
-                        disabled={loading}
-                    // className="disabled:opacity-50 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold text-sm py-2.5"
+                        disabled={loading || !formDossier.clientId || !formDossier.description || formDossier.dossierName.trim() === "" || formDossier.prestations.some(p => (!p.label && p.montant) || (p.label && !p.montant)) || (!formDossier.bl)}
+                        className="bg-slate-500 hover:bg-slate-600 text-white font-bold"
                     >
-                        {loading ? <><Spinner /> Enregistrement...</> : <><Save className="w-4 h-4" />Enregistrer</>}
+                        {loading ? <><Spinner /> Enregistrement...</> : <><Save className="w-4 h-4 mr-2" />Enregistrer</>}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-
     )
 }
-

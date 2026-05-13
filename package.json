@@ -1,6 +1,6 @@
 {
   "name": "transit-pro",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@base-ui/react": "^1.4.1",
     "@dataconnect/admin-generated": "file:src/dataconnect-admin-generated",
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@dnd-kit/core": "^6.3.1",
@@ -36,6 +37,7 @@
     "auth-provider": "^0.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.6.0",
@@ -73,9 +75,9 @@
     "typescript": "^5"
   },
   "build": {
-    "version": "v0.1.10",
+    "version": "v0.1.11",
     "branch": "main",
-    "commit": "d27bbbd",
-    "updatedAt": "2026-05-13 16:41:18"
+    "commit": "55159be",
+    "updatedAt": "2026-05-13 22:41:30"
   }
 }

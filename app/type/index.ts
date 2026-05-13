@@ -58,6 +58,7 @@ export type DossiersState = {
 
 export type Dossier = {
   id: string;
+  tva?: boolean;
   dossierName?: string;
   reference: string;
   clientId: string;

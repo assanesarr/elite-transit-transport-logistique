@@ -30,7 +30,7 @@ export default function FinanceProvider({
   const setAgents = useAgentsStore((state) => state.setAgents)
   const setEmployes = useEmployesStore((state) => state.setEmployes)
   const setDossiers = useDossiersStore(s => s.setDossiers)
-  const {isOpen, close} = useModalStore()
+  const { isOpen, close } = useModalStore()
 
   useEffect(() => {
     setMouvements(initialData)
@@ -56,10 +56,10 @@ export default function FinanceProvider({
     <EncaissementDialog
       open={isOpen}
       onOpenChange={close}
-      // onSuccess={handleSuccess}
+    // onSuccess={handleSuccess}
     />
     <AddDecaissement />
-       <AlertDialogView />
-       <AddNewdossier />
+    <AlertDialogView />
+    <AddNewdossier />
   </>
 }

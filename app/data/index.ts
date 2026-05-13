@@ -28,6 +28,11 @@ export const AVATAR_BG = [
 
 export const PIE_COLORS = ["#3b82f6", "#f59e0b", "#8b5cf6", "#f97316", "#06b6d4", "#10b981", "#ec4899"];
 
+export const TYPES_PRESTATION = [
+    "Dédouanement import", "Dédouanement export", "Transit routier",
+    "Transit maritime", "Transit aérien", "Entreposage", "Groupage",
+    "Conseil douanier", "Fret international", "Assurance marchandise",
+];
 
 // const categoriesDecaiss = [
 //     {

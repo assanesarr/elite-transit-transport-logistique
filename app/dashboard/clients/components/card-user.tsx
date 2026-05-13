@@ -1,5 +1,4 @@
 "use client";
-
 import FooterUser from "./user-footer";
 import {
     IconChevronLeft,
@@ -15,7 +14,8 @@ import {
     IconTrash,
     IconSortAscending,
     IconSortDescending,
-    IconArrowsSort
+    IconArrowsSort,
+    IconUserPlus
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { useId, useState, useMemo } from "react";
@@ -41,6 +41,7 @@ import { deleteClient } from "@/lib/actions";
 import { toast } from "sonner";
 import { useAlertStore } from "@/store/alertStore";
 import { generateSimpleClientListDynamic } from "@/components/pdf-components/ExportClientList";
+import { UserAvatar } from "./user-avatar";
 
 export type User = {
     id: string;
@@ -54,45 +55,53 @@ export type User = {
 };
 
 // Composant pour l'avatar avec les initiales
-export const UserAvatar = ({ name, avatar, dossiersCount }: { name: string; avatar: string; dossiersCount: number }) => {
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map(word => word[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
+// export const UserAvatar = ({ name, avatar, dossiersCount }: { name: string; avatar: string; dossiersCount?: number }) => {
+//     const getInitials = (name: string) => {
+//         return name
+//             .split(' ')
+//             .map(word => word[0])
+//             .join('')
+//             .toUpperCase()
+//             .slice(0, 2);
+//     };
 
-    return (
-        <div className="flex items-center gap-3">
-            <div className="relative">
-                <Avatar className="h-10 w-10 ring-2 ring-slate-200 dark:ring-slate-700 transition-all hover:ring-slate-400">
-                    <AvatarImage src={avatar} alt={name} />
-                    <AvatarFallback className="bg-linear-to-br from-slate-500 to-slate-600 text-white text-sm">
-                        {getInitials(name)}
-                    </AvatarFallback>
-                </Avatar>
+//     return (
+//         <div className="flex items-center gap-3">
+//             <div className="relative">
+//                 <Avatar className="h-10 w-10 ring-2 ring-slate-200 dark:ring-slate-700 transition-all hover:ring-slate-400">
+//                     <AvatarImage src={avatar} alt={name} />
+//                     <AvatarFallback className="bg-linear-to-br from-slate-500 to-slate-600 text-white text-sm">
+//                         {getInitials(name)}
+//                     </AvatarFallback>
+//                 </Avatar>
 
-                {/* Badge pour le nombre de dossiers sur l'avatar */}
-                {dossiersCount > 0 && (
-                    <div className="absolute -bottom-1 -right-1">
-                        <div className="flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold shadow-sm border-2 border-white dark:border-gray-800">
-                            {dossiersCount}
-                        </div>
-                    </div>
-                )}
-            </div>
-            <div className="flex flex-col">
-                <span className="font-medium text-gray-900 dark:text-gray-100">{name}</span>
-                <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-                    <IconFolderOpen className="h-3 w-3" />
-                    <span>{dossiersCount} dossier{dossiersCount > 1 ? 's' : ''}</span>
-                </div>
-            </div>
-        </div>
-    );
-};
+//                 {/* Badge pour le nombre de dossiers sur l'avatar */}
+//                 {dossiersCount !== undefined && dossiersCount > 0 && (
+//                     <div className="absolute -bottom-1 -right-1">
+//                         <div className="flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold shadow-sm border-2 border-white dark:border-gray-800">
+//                             {dossiersCount}
+//                         </div>
+//                     </div>
+//                 )}
+//             </div>
+//             <div className="flex flex-col items-start gap-1">
+//                 <span className="font-medium text-gray-900 dark:text-gray-100">{name}</span>
+//                 {dossiersCount ? (
+//                     <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+//                         <IconFolderOpen className="h-3 w-3" />
+//                         <span>{dossiersCount} dossier{dossiersCount && dossiersCount > 1 ? 's' : ''}</span>
+//                     </div>
+//                 ) : (
+//                     <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+//                         <span className="text-xs text-gray-400 dark:text-gray-500">
+//                             Aucun dossier enregistré
+//                         </span>
+//                     </div>
+//                 )}
+//             </div>
+//         </div>
+//     );
+// };
 
 // Fonctions utilitaires pour les calculs
 const getTotalMontant = (dossiers: any[]) => {
@@ -114,10 +123,17 @@ const getStatus = (dossiers: any[]) => {
     return result <= 0 ? "paye" : "encours";
 };
 
+// Vérifier si un client est nouveau
+const isNewClient = (dossiers: any[]) => {
+    const totalMontant = getTotalMontant(dossiers);
+    const totalVersement = getTotalVersement(dossiers);
+    return totalMontant === 0 && totalVersement === 0;
+};
+
 // Composant d'en-tête de colonne avec tri
 const SortableHeader = ({ column, title }: { column: any; title: string }) => {
     const sortDirection = column.getIsSorted();
-    
+
     return (
         <Button
             variant="ghost"
@@ -172,6 +188,12 @@ export default function CardUser() {
             accessorKey: "name",
             header: ({ column }) => <SortableHeader column={column} title="Client & Dossiers" />,
             cell: ({ row }) => {
+                const isNew = isNewClient(row.original.dossiers);
+
+                if (isNew) {
+                    return null; // Ne rien afficher pour les nouveaux clients
+                }
+
                 return (
                     <div className="flex items-center justify-between w-full">
                         <FooterUser user={row.original} docs={row.original.dossiers} />
@@ -184,18 +206,15 @@ export default function CardUser() {
             accessorFn: (row) => getStatus(row.dossiers),
             header: ({ column }) => <SortableHeader column={column} title="Statut" />,
             cell: ({ row }) => {
+                const isNew = isNewClient(row.original.dossiers);
+
+                if (isNew) {
+                    return null; // Ne rien afficher pour les nouveaux clients
+                }
+
                 const totalMontant = getTotalMontant(row.original.dossiers);
                 const totalVersement = getTotalVersement(row.original.dossiers);
                 const result = totalMontant - totalVersement
-
-                if (totalMontant === 0 && totalVersement === 0) {
-                    return (
-                        <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800">
-                            <IconFolder className="h-3 w-3 mr-1" />
-                            Nouveau
-                        </Badge>
-                    )
-                }
 
                 return (
                     <Badge variant="outline" className={cn(
@@ -224,6 +243,12 @@ export default function CardUser() {
             accessorFn: (row) => getTotalMontant(row.dossiers),
             header: ({ column }) => <SortableHeader column={column} title="Facturé" />,
             cell: ({ row }) => {
+                const isNew = isNewClient(row.original.dossiers);
+
+                if (isNew) {
+                    return null; // Ne rien afficher pour les nouveaux clients
+                }
+
                 const totalMontant = getTotalMontant(row.original.dossiers);
                 return (
                     <span className="font-medium text-gray-900 dark:text-gray-100">
@@ -237,6 +262,12 @@ export default function CardUser() {
             accessorFn: (row) => getTotalVersement(row.dossiers),
             header: ({ column }) => <SortableHeader column={column} title="Encaissé" />,
             cell: ({ row }) => {
+                const isNew = isNewClient(row.original.dossiers);
+
+                if (isNew) {
+                    return null; // Ne rien afficher pour les nouveaux clients
+                }
+
                 const total = getTotalVersement(row.original.dossiers);
                 return (
                     <span className="font-medium text-gray-900 dark:text-gray-100">
@@ -254,6 +285,12 @@ export default function CardUser() {
             },
             header: ({ column }) => <SortableHeader column={column} title="Reste" />,
             cell: ({ row }) => {
+                const isNew = isNewClient(row.original.dossiers);
+
+                if (isNew) {
+                    return null; // Ne rien afficher pour les nouveaux clients
+                }
+
                 const totalMontant = getTotalMontant(row.original.dossiers);
                 const totalVersement = getTotalVersement(row.original.dossiers);
                 const result = totalMontant - totalVersement
@@ -272,6 +309,13 @@ export default function CardUser() {
             id: "actions",
             header: "Actions",
             cell: ({ row }) => {
+                const isNew = isNewClient(row.original.dossiers);
+
+                // Pour les nouveaux clients, ne pas afficher les boutons
+                if (isNew) {
+                    return null; // Ne rien afficher
+                }
+
                 return (
                     <div className="flex items-center gap-1">
                         <Button variant="ghost"
@@ -315,8 +359,53 @@ export default function CardUser() {
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(), // Ajout important pour le tri
+        getSortedRowModel: getSortedRowModel(),
     })
+
+    // Style spécial pour les lignes des nouveaux clients
+    const getRowClassName = (row: any) => {
+        const isNew = isNewClient(row.original.dossiers);
+        return cn(
+            "transition-colors relative",
+            isNew && "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+        );
+    };
+
+    // Rendu personnalisé pour les lignes des nouveaux clients
+    const renderRow = (row: any) => {
+        const isNew = isNewClient(row.original.dossiers);
+
+        if (isNew) {
+            return (
+                <TableRow
+                    key={row.id}
+                    className={getRowClassName(row)}
+                >
+                    <TableCell colSpan={columns.length} className="text-center cursor-not-allowed">
+                        <UserAvatar
+                            name={row.original.name}
+                            avatar={row.original.avatar}
+                        />
+                    </TableCell>
+                </TableRow>
+            );
+        }
+
+        // Rendu normal pour les clients existants
+        return (
+            <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+                className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+            >
+                {row.getVisibleCells().map((cell: any) => (
+                    <TableCell key={cell.id} className="py-3">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                ))}
+            </TableRow>
+        );
+    };
 
     return (
         <div className="p-4 w-full space-y-4">
@@ -370,19 +459,7 @@ export default function CardUser() {
                     </TableHeader>
                     <TableBody>
                         {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                    className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="py-3">
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
+                            table.getRowModel().rows.map((row) => renderRow(row))
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">

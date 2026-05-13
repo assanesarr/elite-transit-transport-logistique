@@ -221,7 +221,6 @@ export default function Dashboard({cheques}: {cheques: Cheque[]}) {
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        route.refresh();
         setTimeout(() => setIsRefreshing(false), 500);
     };
 
