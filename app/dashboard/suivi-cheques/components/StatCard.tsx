@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 interface StatsBarProps {
   stats: {
     total: number;
-    montant: number;
+    montantTotal: number;
     valides: number;
     enAttente: number;
     montantValide: number;
@@ -109,7 +109,7 @@ export default function StatsBar({ stats }: StatsBarProps) {
       <StatCard 
         title="Total chèques" 
         value={stats.total} 
-        subtitle={`${stats.montant.toLocaleString()} FCFA`}
+        subtitle={`${stats.montantTotal.toLocaleString()} FCFA`}
         color="slate"
         icon={icons.total}
       />

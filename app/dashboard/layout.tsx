@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { AppSidebar } from "@/app/dashboard/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { SiteHeader } from './components/site-header';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, getCollection } from '@/lib/firebase-admin';
 import FinanceProvider from './FinanceProvider';
 import { User } from './clients/components/card-user';
 import { EMPLOYE } from '../type';
@@ -41,11 +41,12 @@ export default async function DashboardLayout({
             return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         }) as EMPLOYE[];
 
-    const mouvements = await adminDb.collection("mouvement").orderBy("createdAt", "desc").get()
-        .then((snapshot) => {
-            return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        });
+    // const mouvements = await adminDb.collection("mouvement").orderBy("createdAt", "desc").get()
+    //     .then((snapshot) => {
+    //         return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    //     });
 
+    const cheques = await getCollection('suiviCheques')
     if (!user) {
         redirect('/login');
     }
@@ -65,12 +66,12 @@ export default async function DashboardLayout({
             }
         >
             <FinanceProvider
-                initialData={mouvements}
                 user={user as User}
                 clients={clinets}
                 agents={agents}
                 employes={employes}
                 dossiers={dossiers}
+                cheques={cheques}
             >
                 <AppSidebar variant="inset" />
                 <SidebarInset>

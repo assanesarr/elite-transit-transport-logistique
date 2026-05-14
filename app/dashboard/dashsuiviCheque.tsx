@@ -2,49 +2,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Receipt, CheckCircle, XCircle, Clock, Banknote, Eye } from 'lucide-react';
 import { fmt, fmtDT } from '@/lib/utils';
 import { useMemo, useState } from 'react';
-import { Cheque } from './suivi-cheques/frontsuivicheque';
 import { ChequeDetailModal } from './suivi-cheques/components/AprCheque';
-
-// Composant pour le détail d'un chèque
+import { Cheque, useChequesStore } from '@/store/useChequesStore';
 
 
 // Composant principal de suivi des chèques
-const ChequesSuivi = ({ cheques }: { cheques: Cheque[] }) => {
+const ChequesSuivi = () => {
+    const  {cheques, stats}  = useChequesStore();
     const [selectedCheque, setSelectedCheque] = useState<Cheque | null>(null);
     const [filter, setFilter] = useState<'all' | 'valide' | 'attente'>('all');
-
-    // Statistiques et analyse des chèques
-    const stats = useMemo(() => {
-        const total = cheques.reduce((sum, c) => sum + c.montant, 0);
-        const valides = cheques.filter(c => c.valide).reduce((sum, c) => sum + c.montant, 0);
-        const enAttente = total - valides;
-        const parBanque = cheques.reduce((acc, c) => {
-            const banque = c.banque || 'Non spécifiée';
-            if (!acc[banque]) {
-                acc[banque] = { total: 0, valide: 0, enAttente: 0, count: 0 };
-            }
-            acc[banque].total += c.montant;
-            acc[banque].count++;
-            if (c.valide) {
-                acc[banque].valide += c.montant;
-            } else {
-                acc[banque].enAttente += c.montant;
-            }
-            return acc;
-        }, {} as Record<string, { total: number; valide: number; enAttente: number; count: number }>);
-
-        return {
-            total,
-            valides,
-            enAttente,
-            tauxValidation: total > 0 ? (valides / total) * 100 : 0,
-            parBanque: Object.entries(parBanque).map(([banque, data]) => ({
-                banque: banque.length > 20 ? banque.substring(0, 20) + '...' : banque,
-                ...data,
-                solde: data.valide - data.enAttente
-            })).sort((a, b) => b.total - a.total)
-        };
-    }, [cheques]);
+   
 
     // Filtrage des chèques
     const filteredCheques = useMemo(() => {

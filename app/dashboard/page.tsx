@@ -3,7 +3,7 @@ import { SectionCards } from "@/app/dashboard/components/section-cards"
 import DashboardItems from "./components/dashboard-items"
 import Dashboard from "./dash"
 import { getCollection } from "@/lib/firebase-admin"
-import { Cheque } from "./suivi-cheques/frontsuivicheque"
+import { Cheque } from "@/store/useChequesStore"
 
 export default async function DashboardPage() {
 

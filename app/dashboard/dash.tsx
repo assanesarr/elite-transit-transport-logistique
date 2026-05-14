@@ -28,8 +28,8 @@ import {
 } from 'lucide-react';
 import { Dossier } from '../type';
 import ChequesSuivi from './dashsuiviCheque';
-import { Cheque } from './suivi-cheques/frontsuivicheque';
 import { PrintRapportAnnuel } from '@/components/pdf-components/rapport-annuel';
+import { Cheque } from '@/store/useChequesStore';
 
 // Composants d'amélioration
 function PriorityBadge({ priorite }: { priorite: string }) {
@@ -570,7 +570,7 @@ const trends = useMemo(() => {
             {/* Troisième ligne */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
-                    <ChequesSuivi cheques={cheques} />
+                    <ChequesSuivi />
                 </div>
 
                 {/* Indicateur de santé financière */}

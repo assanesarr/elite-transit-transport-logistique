@@ -9,10 +9,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import AddNewdossier from "@/components/addNewdossier"
 import { usePathname, useRouter } from "next/navigation"
 import { linkClass } from "@/lib/utils"
 import { useDossiersStore } from "@/store/useDossiersStore"
+import { useChequesStore } from "@/store/useChequesStore"
 
 export function NavMain({
   items,
@@ -24,9 +24,11 @@ export function NavMain({
   }[],
 }) {
   const setIsOpen = useDossiersStore((state) => state.setIsOpenDos);
-
+ const  nbAttente  = useChequesStore(s => s.stats.enAttente);
   const route = useRouter();
   const pathname = usePathname();
+
+  // const nbAttente = 1;
 
   return (
     <SidebarGroup>
@@ -35,14 +37,14 @@ export function NavMain({
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               className="bg-slate-700 text-slate-50 font-semibold shadow-sm hover:bg-slate-800 hover:text-slate-50 active:bg-slate/90 active:text-slate-foreground"
-                onClick={() => {
-                  console.log("Add new dossier");
-                  setIsOpen(true);
-                }}
-              >
-                <IconCirclePlusFilled />
-                <span>Ajouter un dossier</span>
-              </SidebarMenuButton>
+              onClick={() => {
+                console.log("Add new dossier");
+                setIsOpen(true);
+              }}
+            >
+              <IconCirclePlusFilled />
+              <span>Ajouter un dossier</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
@@ -55,6 +57,9 @@ export function NavMain({
               >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
+                {item.url === "/dashboard/suivi-cheques" && nbAttente > 0 && (
+                  <span className="bg-red-500 text-slate-50 text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-5 text-center ml-auto">{nbAttente}</span>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

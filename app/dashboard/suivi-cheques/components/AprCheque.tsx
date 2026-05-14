@@ -1,6 +1,6 @@
 import { CheckCircle, Clock } from "lucide-react";
-import { Cheque } from "../frontsuivicheque";
 import { fmt, fmtDate, fmtDT } from "@/lib/utils";
+import { Cheque } from "@/store/useChequesStore";
 
 export const ChequeDetailModal = ({ cheque, onClose }: { cheque: Cheque; onClose: () => void }) => (
     <div
