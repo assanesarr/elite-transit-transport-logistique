@@ -5,7 +5,8 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, Dr
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { ArrowLeft, Printer, Trash2 } from "lucide-react";
 import { IconCircleCheckFilled, IconLoader, IconTrash } from "@tabler/icons-react";
@@ -20,27 +21,36 @@ import { useModalStore } from "@/store/modal/paiement";
 import { useModalDecaissementStore } from "@/store/modal/decaissement";
 import { useAlertStore } from "@/store/alertStore";
 import { entreprise } from "@/app/data"
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { GenerateDossierReport } from "@/components/pdf-components/rapport-dossier-client";
-import { GenerateClientReport } from "@/components/pdf-components/raport-client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserAvatar } from "./user-avatar";
 
 type ViewType = "main" | "details";
 
-export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
+export default function FooterUser({ user }: { user: any }) {
     const [currentView, setCurrentView] = useState<ViewType>("main");
+    const [direction, setDirection] = useState(1);
     const isMobile = useIsMobile();
-    const [dossiers, setDossiers] = useState<any[]>(docs)
+    const [dossiers, setDossiers] = useState<any[]>(user.dossiers || []);
     const [dossier, setDossier] = useState<Dossier | null>(null)
     const [dossierView, setDossierView] = useState("grid"); // "grid" | "list"
-    const dossiersCount = docs?.length || 0;
+    const dossiersCount = dossiers.length || 0;
 
 
     const [filtreStatut, setFiltreStatut] = useState("all");
     const [filtrePrio, setFiltrePrio] = useState("all");
     const [recherche, setRecherche] = useState("");
+
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const clientIdParam = searchParams.get('client');
+    const dossierIdParam = searchParams.get('dossier');
+
+    const drawerTriggerRef = useRef<HTMLButtonElement>(null);
+    const autoOpenExecuted = useRef(false); // Ref pour éviter les exécutions multiples
 
 
     /* ── Dossiers filtrés ── */
@@ -56,36 +66,95 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
     }, [dossiers, filtreStatut, filtrePrio, recherche]);
 
 
+    // Gérer l'ouverture automatique du drawer et la navigation vers le dossier
+    useEffect(() => {
+        // Vérifier si on doit ouvrir automatiquement
+        const shouldAutoOpen = clientIdParam &&
+            clientIdParam === user.id &&
+            dossierIdParam &&
+            !autoOpenExecuted.current &&
+            dossiers.length > 0;
+
+        if (shouldAutoOpen) {
+            autoOpenExecuted.current = true;
+
+            // Trouver le dossier correspondant
+            const targetDossier = dossiers.find(d => d.id === dossierIdParam);
+
+            if (targetDossier) {
+                // Naviguer vers les détails après l'ouverture du drawer
+                setTimeout(() => {
+                    navigateTo("details", targetDossier);
+                    drawerTriggerRef.current?.click();
+                }, 200);
+            } else {
+                toast.error(`Dossier avec l'ID "${dossierIdParam}" non trouvé`);
+                // Nettoyer l'URL si dossier non trouvé
+                const params = new URLSearchParams(searchParams);
+                params.delete('dossier');
+                router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+            }
+        }
+    }, [clientIdParam, dossierIdParam, dossiers]);
 
     // Navigation entre les vues
     const navigateTo = (view: ViewType, d?: any) => {
         if (!d) return
+
+        setDirection(1);
         setDossier(d)
         setCurrentView(view);
     };
 
     const goBack = () => {
+        setDirection(-1);
         setCurrentView("main");
     };
 
+    const closeDrawer = () => {
+        const params = new URLSearchParams(searchParams);
+        if (searchParams.has('dossier')) {
+            params.delete('dossier');
+            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        }
+    }
+
 
     useEffect(() => {
-        setDossiers(docs)
-    }, [user])
+        setDossiers(user.dossiers || []);
+    }, [user]);
 
-
+    const variants = {
+        enter: (direction: number) => ({
+            x: direction > 0 ? "100%" : "-100%",
+            opacity: 0,
+        }),
+        center: {
+            x: 0,
+            opacity: 1,
+        },
+        exit: (direction: number) => ({
+            x: direction > 0 ? "-100%" : "100%",
+            opacity: 0,
+        }),
+    };
 
     return (
-        <Drawer direction={isMobile ? "bottom" : "right"} >
-            <DrawerTrigger className="cursor-pointer">
+        <Drawer
+            direction={isMobile ? "bottom" : "right"}
+            onOpenChange={(open) => !open && closeDrawer()}
+        >
+            <DrawerTrigger className="cursor-pointer" ref={drawerTriggerRef}>
                 <UserAvatar
                     name={user.name}
                     avatar={user.avatar}
                     dossiersCount={dossiersCount}
                 />
             </DrawerTrigger>
-            <DrawerContent className="data-[vaul-drawer-direction=right]:sm:max-w-4xl">
-                <DrawerHeader className="">
+            <DrawerContent
+                className=" data-[vaul-drawer-direction=right]:sm:max-w-4xl h-dvh flex flex-col overflow-hidden space-y-2"
+            >
+                <DrawerHeader className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b">
                     <DrawerTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <AvatarCircle name={user?.name || "?"} idx={2} />
@@ -100,7 +169,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                                 variant="ghost"
                                 size="sm"
                                 onClick={goBack}
-                                className="mb-2 -ml-2"
+                                className="mb-2 -ml-2 rounded-xl hover:bg-slate-100 transition-colors"
                             >
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 Retour
@@ -110,68 +179,103 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                         )}
                     </DrawerTitle>
                 </DrawerHeader>
-                {currentView === "main" && (
-                    <div className="px-4 space-y-4 no-scrollbar overflow-y-auto">
-                        <Card className="rounded-2xl border-slate-100 shadow-sm">
-                            <CardContent className="p-4 flex flex-wrap gap-2 items-center">
-                                <Input placeholder="Rechercher…" className="w-40 h-8 text-xs rounded-xl" value={recherche} onChange={e => setRecherche(e.target.value)} />
-                                <Select value={filtreStatut} onValueChange={setFiltreStatut}>
-                                    <SelectTrigger className="w-36 h-8 text-xs rounded-xl"><SelectValue placeholder="Statut" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Tous statuts</SelectItem>
-                                        {Object.entries(STATUTS_DOSSIER).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={filtrePrio} onValueChange={setFiltrePrio}>
-                                    <SelectTrigger className="w-28 h-8 text-xs rounded-xl"><SelectValue placeholder="Priorité" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">Toutes</SelectItem>
-                                        {["urgente", "haute", "normale"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <span className="text-xs text-slate-400">{dossiersFiltres.length} résultats</span>
-                                <div className="ml-auto flex items-center">
-                                    <div className="flex bg-slate-100 rounded-xl p-1 gap-0.5">
-                                        <button onClick={() => setDossierView("grid")} title="Vue grille"
-                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dossierView === "grid" ? "bg-white shadow-sm text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
-                                                <rect x="1" y="1" width="6" height="6" rx="1.5" />
-                                                <rect x="9" y="1" width="6" height="6" rx="1.5" />
-                                                <rect x="1" y="9" width="6" height="6" rx="1.5" />
-                                                <rect x="9" y="9" width="6" height="6" rx="1.5" />
-                                            </svg>
-                                        </button>
-                                        <button onClick={() => setDossierView("list")} title="Vue liste"
-                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dossierView === "list" ? "bg-white shadow-sm text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 16 16">
-                                                <line x1="3" y1="4" x2="13" y2="4" /><line x1="3" y1="8" x2="13" y2="8" /><line x1="3" y1="12" x2="13" y2="12" />
-                                            </svg>
-                                        </button>
-                                    </div>
+                <div className="relative flex-1 min-h-0 overflow-hidden">
+                    <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                        {currentView === "main" && (
+                            <motion.div
+                                key="main"
+                                custom={direction}
+                                variants={variants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 280,
+                                    damping: 30,
+                                }}
+                                className="h-full"
+                            >
+                                <div className="px-4 space-y-4 overflow-y-auto h-full pb-24">
+                                    <Card className="rounded-2xl border-slate-100 shadow-sm">
+                                        <CardContent className="p-4 flex flex-wrap gap-2 items-center">
+                                            <Input placeholder="Rechercher…" className="w-40 h-8 text-xs rounded-xl" value={recherche} onChange={e => setRecherche(e.target.value)} />
+                                            <Select value={filtreStatut} onValueChange={setFiltreStatut}>
+                                                <SelectTrigger className="w-36 h-8 text-xs rounded-xl"><SelectValue placeholder="Statut" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Tous statuts</SelectItem>
+                                                    {Object.entries(STATUTS_DOSSIER).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <Select value={filtrePrio} onValueChange={setFiltrePrio}>
+                                                <SelectTrigger className="w-28 h-8 text-xs rounded-xl"><SelectValue placeholder="Priorité" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Toutes</SelectItem>
+                                                    {["urgente", "haute", "normale"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <span className="text-xs text-slate-400">{dossiersFiltres.length} résultats</span>
+                                            <div className="ml-auto flex items-center">
+                                                <div className="flex bg-slate-100 rounded-xl p-1 gap-0.5">
+                                                    <button onClick={() => setDossierView("grid")} title="Vue grille"
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dossierView === "grid" ? "bg-white shadow-sm text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+                                                            <rect x="1" y="1" width="6" height="6" rx="1.5" />
+                                                            <rect x="9" y="1" width="6" height="6" rx="1.5" />
+                                                            <rect x="1" y="9" width="6" height="6" rx="1.5" />
+                                                            <rect x="9" y="9" width="6" height="6" rx="1.5" />
+                                                        </svg>
+                                                    </button>
+                                                    <button onClick={() => setDossierView("list")} title="Vue liste"
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${dossierView === "list" ? "bg-white shadow-sm text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 16 16">
+                                                            <line x1="3" y1="4" x2="13" y2="4" /><line x1="3" y1="8" x2="13" y2="8" /><line x1="3" y1="12" x2="13" y2="12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                    {dossierView === "grid" && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                            {
+                                                dossiersFiltres.map((dossier: any, index: number) => (
+                                                    <GridDossier key={index} d={dossier} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
+                                                ))
+                                            }
+                                        </div>
+                                    )}
+
+                                    {dossierView === "list" && (
+                                        <ListDossier ds={dossiersFiltres} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
+                                    )}
+
                                 </div>
-                            </CardContent>
-                        </Card>
-                        {dossierView === "grid" && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                {
-                                    dossiersFiltres.map((dossier: any, index: number) => (
-                                        <GridDossier key={index} d={dossier} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
-                                    ))
-                                }
-                            </div>
+                            </motion.div>
                         )}
+                        {currentView === "details" && (
+                            <motion.div
+                                key="details"
+                                custom={direction}
+                                variants={variants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 280,
+                                    damping: 30,
+                                }}
+                                className="h-full bg-background"
+                            >
 
-                        {dossierView === "list" && (
-                            <ListDossier ds={dossiersFiltres} client={user} setDossiers={setDossiers} navigateTo={navigateTo} />
+                                <ViewDossier dossier={dossier} />
+
+                            </motion.div>
                         )}
-
-                    </div>
-                )}
-                {currentView === "details" && (
-                    <ViewDossier dossier={dossier} />
-                )}
-
-                <DrawerFooter>
+                    </AnimatePresence>
+                </div>
+                {/* <DrawerFooter className="justify-end border-t">
                     <Button
                         variant="outline"
                         onClick={() => currentView === "details" ? GenerateDossierReport(dossier, user, entreprise) : GenerateClientReport(user, entreprise)}
@@ -179,12 +283,7 @@ export default function FooterUser({ user, docs }: { user: any, docs: any[] }) {
                     >
                         <Printer className="mr-2 h-4 w-4" /> Imprimer le Rapport {currentView === "details" ? (dossier && dossier.reference || dossier && dossier.dossierName) : user.name}
                     </Button>
-                    <DrawerClose asChild>
-                        <p className="hidden text-center text-xs print:text-muted-foreground mt-4 print:block ">
-                            Reçu généré par Elite Transit Transport Logistique. Merci de votre confiance!
-                        </p>
-                    </DrawerClose>
-                </DrawerFooter>
+                </DrawerFooter> */}
             </DrawerContent>
         </Drawer >
 
@@ -484,7 +583,7 @@ function ViewDossier({ dossier }: { dossier: any }) {
 
 
     return (
-        <div className="space-y-5 px-4 no-scrollbar overflow-y-auto">
+        <div className="space-y-5 px-4 overflow-y-auto h-full pb-24">
             {/* Breadcrumb */}
             <div>
                 <div className="flex items-center justify-between flex-wrap gap-3">

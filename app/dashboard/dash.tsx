@@ -22,14 +22,13 @@ import { entreprise } from '@/app/data';
 import {
     Eye, EyeOff, FileChartColumnIncreasing, TrendingUp,
     TrendingDown, Calendar, Users, Ship, DollarSign,
-    CreditCard, Receipt, AlertCircle, CheckCircle,
-    Clock, Download, Filter, RefreshCw, ChevronRight,
-    ArrowUp, ArrowDown, Wallet, Building2, Briefcase
+    AlertCircle, CheckCircle,
+    Clock, RefreshCw, ChevronRight,
+    ArrowUp, ArrowDown, Wallet, Briefcase
 } from 'lucide-react';
 import { Dossier } from '../type';
 import ChequesSuivi from './dashsuiviCheque';
 import { PrintRapportAnnuel } from '@/components/pdf-components/rapport-annuel';
-import { Cheque } from '@/store/useChequesStore';
 
 // Composants d'amélioration
 function PriorityBadge({ priorite }: { priorite: string }) {
@@ -206,7 +205,7 @@ const PerformanceResponsable = ({ dossiers }: { dossiers: Dossier[] }) => {
 };
 
 // Composant principal amélioré
-export default function Dashboard({cheques}: {cheques: Cheque[]}) {
+export default function Dashboard() {
     const { dossiers, stats } = useDossiersStore();
     const clients = useClientsStore((state) => state.clients);
     const { isOpen, toggle } = useUIStore();
@@ -221,6 +220,7 @@ export default function Dashboard({cheques}: {cheques: Cheque[]}) {
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
+        route.refresh();
         setTimeout(() => setIsRefreshing(false), 500);
     };
 
@@ -242,83 +242,61 @@ export default function Dashboard({cheques}: {cheques: Cheque[]}) {
         })).filter(x => x.value > 0);
     }, [dossiers]);
 
-    // Calcul des tendances
-    // const trends = useMemo(() => {
-    //     const currentMonth = new Date().getMonth();
-    //     const currentYear = new Date().getFullYear();
-
-    //     const currentMonthDossiers = dossiers.filter(d => {
-    //         const date = new Date(d.createdAt);
-    //         return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    //     });
-
-    //     const lastMonthDossiers = dossiers.filter(d => {
-    //         const date = new Date(d.createdAt);
-    //         return date.getMonth() === currentMonth - 1 && date.getFullYear() === currentYear;
-    //     });
-
-    //     const currentTotal = currentMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
-    //     const lastTotal = lastMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
-
-    //     return {
-    //         facturation: lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0
-    //     };
-    // }, [dossiers]);
 
     // Calcul des tendances
-const trends = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    // Handle previous month (with year rollover)
-    let previousMonth = currentMonth - 1;
-    let previousYear = currentYear;
-    
-    if (previousMonth < 0) {
-        previousMonth = 11; // December
-        previousYear = currentYear - 1;
-    }
-    
-    // Current month dossiers
-    const currentMonthDossiers = dossiers.filter(d => {
-        const date = new Date(d.createdAt);
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    });
-    
-    // Previous month dossiers
-    const previousMonthDossiers = dossiers.filter(d => {
-        const date = new Date(d.createdAt);
-        return date.getMonth() === previousMonth && date.getFullYear() === previousYear;
-    });
-    
-    const currentTotal = currentMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
-    const previousTotal = previousMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
-    
-    // Calculate percentage change
-    let percentChange = 0;
-    let trend = "neutral";
-    
-    if (previousTotal === 0 && currentTotal > 0) {
-        percentChange = 100;
-        trend = "up";
-    } else if (previousTotal === 0 && currentTotal === 0) {
-        percentChange = 0;
-        trend = "neutral";
-    } else {
-        percentChange = ((currentTotal - previousTotal) / previousTotal) * 100;
-        trend = percentChange > 0 ? "up" : percentChange < 0 ? "down" : "neutral";
-    }
-    
-    return {
-        facturation: percentChange,
-        trend: trend,           // ← "up", "down", or "neutral"
-        currentTotal,
-        previousTotal
-    };
-}, [dossiers]);
+    const trends = useMemo(() => {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
 
-  
+        // Handle previous month (with year rollover)
+        let previousMonth = currentMonth - 1;
+        let previousYear = currentYear;
+
+        if (previousMonth < 0) {
+            previousMonth = 11; // December
+            previousYear = currentYear - 1;
+        }
+
+        // Current month dossiers
+        const currentMonthDossiers = dossiers.filter(d => {
+            const date = new Date(d.createdAt);
+            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        });
+
+        // Previous month dossiers
+        const previousMonthDossiers = dossiers.filter(d => {
+            const date = new Date(d.createdAt);
+            return date.getMonth() === previousMonth && date.getFullYear() === previousYear;
+        });
+
+        const currentTotal = currentMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
+        const previousTotal = previousMonthDossiers.reduce((s, d) => s + d.montant_total, 0);
+
+        // Calculate percentage change
+        let percentChange = 0;
+        let trend = "neutral";
+
+        if (previousTotal === 0 && currentTotal > 0) {
+            percentChange = 100;
+            trend = "up";
+        } else if (previousTotal === 0 && currentTotal === 0) {
+            percentChange = 0;
+            trend = "neutral";
+        } else {
+            percentChange = ((currentTotal - previousTotal) / previousTotal) * 100;
+            trend = percentChange > 0 ? "up" : percentChange < 0 ? "down" : "neutral";
+        }
+
+        return {
+            facturation: percentChange,
+            trend: trend,           // ← "up", "down", or "neutral"
+            currentTotal,
+            previousTotal
+        };
+    }, [dossiers]);
+
+
 
     return (
         <div className="space-y-5">
@@ -349,8 +327,8 @@ const trends = useMemo(() => {
                                 key={period.value}
                                 onClick={() => setSelectedPeriod(period.value as any)}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${selectedPeriod === period.value
-                                        ? 'bg-white shadow-sm text-slate-900'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white shadow-sm text-slate-900'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 {period.label}
@@ -427,7 +405,7 @@ const trends = useMemo(() => {
                 />
                 <KpiCard
                     label="Solde net"
-                    value={ (stats.soldeNet < 0 ? "-" : "") + fmtM(Math.abs(stats.soldeNet))}
+                    value={(stats.soldeNet < 0 ? "-" : "") + fmtM(Math.abs(stats.soldeNet))}
                     sub={stats.soldeNet >= 0 ? "Bénéfice" : "Déficit"}
                     icon={<Wallet size={16} />}
                     color={stats.soldeNet >= 0 ? "text-blue-700" : "text-orange-600"}
@@ -452,7 +430,7 @@ const trends = useMemo(() => {
             <div className="grid grid-cols-3 gap-3">
                 <Card
                     className="rounded-2xl border-0 shadow-sm bg-blue-50/60 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
-                    // onClick={() => hasPermission("dossier.read") ? route.push("/dashboard/dossiers") : null}
+                // onClick={() => hasPermission("dossier.read") ? route.push("/dashboard/dossiers") : null}
                 >
                     <CardContent className="p-4 flex items-center justify-between">
                         <div>
@@ -467,7 +445,7 @@ const trends = useMemo(() => {
 
                 <Card
                     className="rounded-2xl border-0 shadow-sm bg-amber-50/60 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
-                    // onClick={() => hasPermission("dossier.read") ? route.push("/dashboard/dossiers?filter=attente") : null}
+                // onClick={() => hasPermission("dossier.read") ? route.push("/dashboard/dossiers?filter=attente") : null}
                 >
                     <CardContent className="p-4 flex items-center justify-between">
                         <div>
@@ -482,7 +460,7 @@ const trends = useMemo(() => {
 
                 <Card
                     className="rounded-2xl border-0 shadow-sm bg-rose-50/60 cursor-pointer hover:shadow-md transition-all hover:scale-[1.02]"
-                    // onClick={() => hasPermission("dossier.read") ? route.push("/dashboard/dossiers?filter=urgent") : null}
+                // onClick={() => hasPermission("dossier.read") ? route.push("/dashboard/dossiers?filter=urgent") : null}
                 >
                     <CardContent className="p-4 flex items-center justify-between">
                         <div>

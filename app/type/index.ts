@@ -12,21 +12,31 @@ export type EMPLOYE = {
   email?: string;
   phone?: string
   dept?: string;
+  role?: string;
   poste?: string;
   salaire?: number;
   statut?: string;
   createdAt: string;
 }
 
-type Employe = {
+export type Client = {
   id: string
   name: string
-  email?: string
-  phone?: string
-  poste?: string
-  statut?: string
+  email: string
+  phone: string
   createdAt: Date
+  dossiers: Dossier[]
 }
+
+// export type Employe = {
+//   id: string
+//   name: string
+//   email?: string
+//   phone?: string
+//   poste?: string
+//   statut?: string
+//   createdAt: Date
+// }
 
 export type EmployeState = {
   employes: EMPLOYE[]
@@ -71,7 +81,7 @@ export type Dossier = {
   port?: string;
   bl?: string;
   montant_total: number;
-  // montantTotal: number;
+  montant_paye?: number;
   versement: {
     date: string;
     montant: number;

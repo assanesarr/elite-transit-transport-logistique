@@ -1,6 +1,6 @@
 {
   "name": "transit-pro",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -41,6 +41,7 @@
     "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.6.0",
+    "framer-motion": "^12.38.0",
     "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
@@ -75,9 +76,9 @@
     "typescript": "^5"
   },
   "build": {
-    "version": "v0.1.12",
+    "version": "v0.1.13",
     "branch": "main",
-    "commit": "f10b237",
-    "updatedAt": "2026-05-14 00:04:16"
+    "commit": "4abcc9b",
+    "updatedAt": "2026-05-17 19:27:07"
   }
 }

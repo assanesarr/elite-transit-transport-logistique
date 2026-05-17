@@ -330,7 +330,7 @@ export const today = new Date().toISOString().split("T")[0];
 export const fmtDT = (d: any) => d ? new Date(d).toLocaleString("fr-SN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
 
 // export const totalPaye = (d: Dossier) => d.versement.reduce((s, p) => s + p.montant, 0);
-export const resteApayer = (d: Dossier) => d.montant_total - totalPaye(d);
+export const resteApayer = (d: Dossier) => (d.tva ? d.montant_total * 1.18 : d.montant_total) - totalPaye(d);
 export const tauxPaiement = (d: Dossier) => d.montant_total ? Math.round((totalPaye(d) / d.montant_total) * 100) : 0;
 export const totalDecaisse = (d: Dossier) => (d.payements || []).reduce((s, x) => s + Number(x.montant), 0);
 export const soldeDecaisse = (d: Dossier) => totalPaye(d) - totalDecaisse(d);

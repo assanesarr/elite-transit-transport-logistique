@@ -8,20 +8,16 @@ import {
     IconCircleCheckFilled,
     IconLoader,
     IconFileText,
-    IconFolder,
-    IconFolderOpen,
-    IconFileDescription,
     IconTrash,
     IconSortAscending,
     IconSortDescending,
     IconArrowsSort,
-    IconUserPlus
+    IconX,
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
-import { useId, useState, useMemo } from "react";
+import { useId, useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, isDossierSolde } from "@/lib/utils";
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, SortingState, useReactTable, getSortedRowModel } from "@tanstack/react-table";
 import { entreprise } from '@/app/data';
@@ -42,6 +38,7 @@ import { toast } from "sonner";
 import { useAlertStore } from "@/store/alertStore";
 import { generateSimpleClientListDynamic } from "@/components/pdf-components/ExportClientList";
 import { UserAvatar } from "./user-avatar";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export type User = {
     id: string;
@@ -53,55 +50,6 @@ export type User = {
     avatar: string;
     dossiers: any[];
 };
-
-// Composant pour l'avatar avec les initiales
-// export const UserAvatar = ({ name, avatar, dossiersCount }: { name: string; avatar: string; dossiersCount?: number }) => {
-//     const getInitials = (name: string) => {
-//         return name
-//             .split(' ')
-//             .map(word => word[0])
-//             .join('')
-//             .toUpperCase()
-//             .slice(0, 2);
-//     };
-
-//     return (
-//         <div className="flex items-center gap-3">
-//             <div className="relative">
-//                 <Avatar className="h-10 w-10 ring-2 ring-slate-200 dark:ring-slate-700 transition-all hover:ring-slate-400">
-//                     <AvatarImage src={avatar} alt={name} />
-//                     <AvatarFallback className="bg-linear-to-br from-slate-500 to-slate-600 text-white text-sm">
-//                         {getInitials(name)}
-//                     </AvatarFallback>
-//                 </Avatar>
-
-//                 {/* Badge pour le nombre de dossiers sur l'avatar */}
-//                 {dossiersCount !== undefined && dossiersCount > 0 && (
-//                     <div className="absolute -bottom-1 -right-1">
-//                         <div className="flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-xs font-bold shadow-sm border-2 border-white dark:border-gray-800">
-//                             {dossiersCount}
-//                         </div>
-//                     </div>
-//                 )}
-//             </div>
-//             <div className="flex flex-col items-start gap-1">
-//                 <span className="font-medium text-gray-900 dark:text-gray-100">{name}</span>
-//                 {dossiersCount ? (
-//                     <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-//                         <IconFolderOpen className="h-3 w-3" />
-//                         <span>{dossiersCount} dossier{dossiersCount && dossiersCount > 1 ? 's' : ''}</span>
-//                     </div>
-//                 ) : (
-//                     <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-//                         <span className="text-xs text-gray-400 dark:text-gray-500">
-//                             Aucun dossier enregistré
-//                         </span>
-//                     </div>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// };
 
 // Fonctions utilitaires pour les calculs
 const getTotalMontant = (dossiers: any[]) => {
@@ -161,6 +109,38 @@ export default function CardUser() {
         pageIndex: 0,
         pageSize: 10,
     })
+    
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const clientIdParam = searchParams.get('client');
+    
+    // Filtrer les clients en fonction du paramètre URL
+    const [filteredClients, setFilteredClients] = useState(clients);
+    
+    useEffect(() => {
+        if (clientIdParam) {
+            const filtered = clients.filter(client => client.id === clientIdParam);
+            setFilteredClients(filtered);
+            
+            // Optionnel: Afficher un message si le client n'existe pas
+            if (filtered.length === 0 && clients.length > 0) {
+                toast.error(`Client avec l'ID "${clientIdParam}" non trouvé`);
+            }
+        } else {
+            setFilteredClients(clients);
+        }
+    }, [clients, clientIdParam]);
+    
+    // Réinitialiser la pagination quand le filtre change
+    useEffect(() => {
+        setPagination(prev => ({ ...prev, pageIndex: 0 }));
+    }, [clientIdParam]);
+    
+    // Réinitialiser le filtre (retirer le paramètre URL)
+    const resetFilter = () => {
+        router.push(window.location.pathname);
+        setFilteredClients(clients);
+    };
 
     const destr = async (u: User) => {
         const hasUnsoldDossiers = (dossiers: any[]): boolean => {
@@ -191,12 +171,12 @@ export default function CardUser() {
                 const isNew = isNewClient(row.original.dossiers);
 
                 if (isNew) {
-                    return null; // Ne rien afficher pour les nouveaux clients
+                    return null;
                 }
 
                 return (
                     <div className="flex items-center justify-between w-full">
-                        <FooterUser user={row.original} docs={row.original.dossiers} />
+                        <FooterUser user={row.original} />
                     </div>
                 )
             }
@@ -209,7 +189,7 @@ export default function CardUser() {
                 const isNew = isNewClient(row.original.dossiers);
 
                 if (isNew) {
-                    return null; // Ne rien afficher pour les nouveaux clients
+                    return null;
                 }
 
                 const totalMontant = getTotalMontant(row.original.dossiers);
@@ -246,7 +226,7 @@ export default function CardUser() {
                 const isNew = isNewClient(row.original.dossiers);
 
                 if (isNew) {
-                    return null; // Ne rien afficher pour les nouveaux clients
+                    return null;
                 }
 
                 const totalMontant = getTotalMontant(row.original.dossiers);
@@ -265,7 +245,7 @@ export default function CardUser() {
                 const isNew = isNewClient(row.original.dossiers);
 
                 if (isNew) {
-                    return null; // Ne rien afficher pour les nouveaux clients
+                    return null;
                 }
 
                 const total = getTotalVersement(row.original.dossiers);
@@ -288,7 +268,7 @@ export default function CardUser() {
                 const isNew = isNewClient(row.original.dossiers);
 
                 if (isNew) {
-                    return null; // Ne rien afficher pour les nouveaux clients
+                    return null;
                 }
 
                 const totalMontant = getTotalMontant(row.original.dossiers);
@@ -300,7 +280,7 @@ export default function CardUser() {
                         "font-bold",
                         result > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                     )}>
-                        {new Intl.NumberFormat("fr-FR").format(result)} FCFA
+                        {result > 0 ? new Intl.NumberFormat("fr-FR").format(result) + " FCFA" : "Soldé"}
                     </span>
                 )
             },
@@ -311,9 +291,8 @@ export default function CardUser() {
             cell: ({ row }) => {
                 const isNew = isNewClient(row.original.dossiers);
 
-                // Pour les nouveaux clients, ne pas afficher les boutons
                 if (isNew) {
-                    return null; // Ne rien afficher
+                    return null;
                 }
 
                 return (
@@ -346,7 +325,7 @@ export default function CardUser() {
     ]
 
     const table = useReactTable({
-        data: clients,
+        data: filteredClients,
         columns,
         state: {
             sorting,
@@ -391,7 +370,6 @@ export default function CardUser() {
             );
         }
 
-        // Rendu normal pour les clients existants
         return (
             <TableRow
                 key={row.id}
@@ -407,8 +385,33 @@ export default function CardUser() {
         );
     };
 
+    // Trouver le client filtré pour afficher son nom
+    const filteredClient = clientIdParam && filteredClients.length === 1 ? filteredClients[0] : null;
+
     return (
         <div className="p-4 w-full space-y-4">
+            {/* Bannière d'information si un filtre est actif */}
+            {clientIdParam && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                        <span>🔍</span>
+                        <span>Affichage du client sélectionné</span>
+                        {filteredClient && (
+                            <span className="font-semibold">: {filteredClient.name}</span>
+                        )}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={resetFilter}
+                        className="bg-white dark:bg-gray-800 gap-1"
+                    >
+                        <IconX className="h-3 w-3" />
+                        Afficher tous les clients
+                    </Button>
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row items-center gap-4 py-4">
                 <Input
                     placeholder="Rechercher par nom..."
@@ -417,22 +420,23 @@ export default function CardUser() {
                         table.getColumn("name")?.setFilterValue(event.target.value)
                     }
                     className="max-w-sm"
+                    disabled={!!clientIdParam}
                 />
 
                 <div className="ml-auto flex items-center gap-2">
                     <Button
                         className="gap-2 bg-linear-to-r font-bold text-white bg-green-700 hover:bg-green-600 hover:text-slate-50 border-0"
-                        onClick={() => generateSimpleClientListDynamic(clients, entreprise)}
+                        onClick={() => generateSimpleClientListDynamic(filteredClients, entreprise)}
                     >
                         <IconFileText className="h-4 w-4" />
                         Export Clients PDF
                     </Button>
                     <Button
                         className="ml-auto gap-2 bg-linear-to-r font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50 border-0"
-                        onClick={() => ExportTableClientPDF(clients, entreprise)}
+                        onClick={() => ExportTableClientPDF(filteredClients, entreprise)}
                     >
                         <IconFileText className="h-4 w-4" />
-                        Raport Clients PDF
+                        Rapport Clients PDF
                     </Button>
                 </div>
             </div>
@@ -463,7 +467,9 @@ export default function CardUser() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    Aucun résultat trouvé.
+                                    {clientIdParam 
+                                        ? `Aucun client trouvé avec l'ID "${clientIdParam}"`
+                                        : "Aucun résultat trouvé."}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -471,57 +477,60 @@ export default function CardUser() {
                 </Table>
             </div>
 
-            <div className="flex flex-col sm:flex-row w-full items-center justify-between gap-4 p-2">
-                <div className="text-sm text-gray-500">
-                    Affichage de {table.getRowModel().rows.length} sur {clients.length} clients
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-center text-sm font-medium">
-                        Page {table.getState().pagination.pageIndex + 1} sur {table.getPageCount()}
+            {/* Pagination - cachée si filtre URL actif et un seul client */}
+            {(!clientIdParam || filteredClients.length > 1) && (
+                <div className="flex flex-col sm:flex-row w-full items-center justify-between gap-4 p-2">
+                    <div className="text-sm text-gray-500">
+                        Affichage de {table.getRowModel().rows.length} sur {filteredClients.length} clients
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            className="hidden h-8 w-8 p-0 lg:flex"
-                            onClick={() => table.setPageIndex(0)}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            <span className="sr-only">Première page</span>
-                            <IconChevronsLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            size="icon"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            <span className="sr-only">Page précédente</span>
-                            <IconChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            size="icon"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            <span className="sr-only">Page suivante</span>
-                            <IconChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="hidden h-8 w-8 p-0 lg:flex"
-                            size="icon"
-                            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            <span className="sr-only">Dernière page</span>
-                            <IconChevronsRight className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-center text-sm font-medium">
+                            Page {table.getState().pagination.pageIndex + 1} sur {table.getPageCount()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                className="hidden h-8 w-8 p-0 lg:flex"
+                                onClick={() => table.setPageIndex(0)}
+                                disabled={!table.getCanPreviousPage()}
+                            >
+                                <span className="sr-only">Première page</span>
+                                <IconChevronsLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0"
+                                size="icon"
+                                onClick={() => table.previousPage()}
+                                disabled={!table.getCanPreviousPage()}
+                            >
+                                <span className="sr-only">Page précédente</span>
+                                <IconChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0"
+                                size="icon"
+                                onClick={() => table.nextPage()}
+                                disabled={!table.getCanNextPage()}
+                            >
+                                <span className="sr-only">Page suivante</span>
+                                <IconChevronRight className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="hidden h-8 w-8 p-0 lg:flex"
+                                size="icon"
+                                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                                disabled={!table.getCanNextPage()}
+                            >
+                                <span className="sr-only">Dernière page</span>
+                                <IconChevronsRight className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

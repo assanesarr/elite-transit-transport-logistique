@@ -36,7 +36,7 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
-              className="bg-slate-700 text-slate-50 font-semibold shadow-sm hover:bg-slate-800 hover:text-slate-50 active:bg-slate/90 active:text-slate-foreground"
+              className="cursor-pointer bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:text-white border-none shadow-lg hover:shadow-xl transition-all duration-300 font-medium "
               onClick={() => {
                 console.log("Add new dossier");
                 setIsOpen(true);

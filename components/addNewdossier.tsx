@@ -76,13 +76,12 @@ export default function AddNewdossier() {
     // Filtrer les clients en fonction de la recherche
     const filteredClients = useMemo(() => {
         if (!clientSearchValue.trim()) {
-            // Si pas de recherche, afficher tous les clients par ordre alphabétique
             return clients
                 .map(client => ({
                     ...client,
                     dossiersCount: dossiersCountByClient.get(client.id) || 0
                 }))
-                .sort((a, b) => a.name.localeCompare(b.name)); // Tri alphabétique
+                .sort((a, b) => a.name.localeCompare(b.name));
         }
 
         const searchLower = clientSearchValue.toLowerCase();
@@ -97,12 +96,10 @@ export default function AddNewdossier() {
                 dossiersCount: dossiersCountByClient.get(client.id) || 0
             }))
             .sort((a, b) => {
-                // Priorité aux noms qui commencent par la recherche
                 const aStartsWith = a.name.toLowerCase().startsWith(searchLower);
                 const bStartsWith = b.name.toLowerCase().startsWith(searchLower);
                 if (aStartsWith && !bStartsWith) return -1;
                 if (!aStartsWith && bStartsWith) return 1;
-                // Ensuite par ordre alphabétique
                 return a.name.localeCompare(b.name);
             });
     }, [clients, clientSearchValue, dossiersCountByClient]);
@@ -219,7 +216,6 @@ export default function AddNewdossier() {
         setClientSearchValue("")
     }
 
-    // Formater le nombre de dossiers avec le bon pluriel
     const formatDossierCount = (count: number) => {
         if (count === 0) return "Aucun dossier";
         if (count === 1) return "1 dossier";
@@ -228,13 +224,13 @@ export default function AddNewdossier() {
 
     return (
         <Dialog open={isOpenDos} onOpenChange={setIsOpenDos}>
-            <DialogContent className="p-0 no-scrollbar max-h-screen overflow-y-auto sm:max-w-2xl">
-                <DialogHeader className="bg-linear-to-r from-slate-900 to-slate-800 px-6 py-4 rounded-t-lg sticky top-0 z-10">
-                    <DialogTitle className="text-white font-bold text-xl">Nouveau dossier</DialogTitle>
+            <DialogContent className="p-0 no-scrollbar max-h-[95vh] overflow-y-auto sm:max-w-2xl  [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                <DialogHeader className="bg-linear-to-r from-slate-900 to-slate-800 px-4 sm:px-6 py-3 sm:py-4 rounded-t-lg sticky top-0 z-10">
+                    <DialogTitle className="text-white font-bold text-lg sm:text-xl">Nouveau dossier</DialogTitle>
                 </DialogHeader>
 
-                <div className="bg-white rounded-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="p-6 space-y-4">
+                <div className="bg-white rounded-2xl w-full  ">
+                    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                         {/* Sélection Client avec Combobox */}
                         <div>
                             <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
@@ -246,25 +242,24 @@ export default function AddNewdossier() {
                                     <Command className="rounded-lg border shadow-md" shouldFilter={false}>
                                         <div className="flex items-center border-b px-3">
                                             <CommandInput
-                                                placeholder="Rechercher un client par nom, email ou téléphone..."
+                                                placeholder="Rechercher un client..."
                                                 value={clientSearchValue}
                                                 onValueChange={setClientSearchValue}
-                                                className="border-0 focus:ring-0 h-11 w-full"
+                                                className="border-0 focus:ring-0 h-11 w-full text-sm"
                                             />
                                             {clientSearchValue && (
                                                 <button
                                                     onClick={() => setClientSearchValue("")}
-                                                    className="text-gray-400 hover:text-gray-600"
+                                                    className="text-gray-400 hover:text-gray-600 shrink-0"
                                                 >
                                                     ✕
                                                 </button>
                                             )}
-
                                         </div>
                                         <CommandList>
                                             <CommandEmpty>
                                                 <div className="py-6 text-center">
-                                                    <p className="text-sm text-gray-500">Aucun client trouvé pour "{clientSearchValue}"</p>
+                                                    <p className="text-sm text-gray-500 px-4">Aucun client trouvé</p>
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -274,7 +269,7 @@ export default function AddNewdossier() {
                                                             startTransition(() => route.push("/dashboard/clients/?r=new"))
                                                         }}
                                                     >
-                                                        + Ajouter un nouveau client
+                                                        + Ajouter un client
                                                     </Button>
                                                 </div>
                                             </CommandEmpty>
@@ -287,10 +282,10 @@ export default function AddNewdossier() {
                                                         className="cursor-pointer"
                                                     >
                                                         <div className="flex flex-col w-full">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="font-medium">{client.name}</span>
+                                                            <div className="flex justify-between items-center flex-wrap gap-2">
+                                                                <span className="font-medium text-sm sm:text-base">{client.name}</span>
                                                                 <span className={cn(
-                                                                    "text-xs px-2 py-0.5 rounded-full",
+                                                                    "text-xs px-2 py-0.5 rounded-full shrink-0",
                                                                     client.dossiersCount > 0 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
                                                                 )}>
                                                                     <FolderOpen className="w-3 h-3 inline mr-1" />
@@ -298,14 +293,14 @@ export default function AddNewdossier() {
                                                                 </span>
                                                             </div>
                                                             {(client.email || client.phone) && (
-                                                                <span className="text-xs text-gray-500 mt-1">
+                                                                <span className="text-xs text-gray-500 mt-1 break-all">
                                                                     {client.email && `📧 ${client.email}`}
                                                                     {client.email && client.phone && " • "}
                                                                     {client.phone && `📱 ${client.phone}`}
                                                                 </span>
                                                             )}
                                                             <div className="text-xs text-gray-400 mt-1">
-                                                                {formatDossierCount(client.dossiersCount)} au total
+                                                                {formatDossierCount(client.dossiersCount)}
                                                             </div>
                                                         </div>
                                                     </CommandItem>
@@ -315,12 +310,14 @@ export default function AddNewdossier() {
                                     </Command>
                                 </div>
                             ) : (
-                                <div className="flex items-center justify-between p-4 bg-linear-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="font-semibold text-emerald-900 text-lg">{formDossier.clientName}</div>
+                                <div className="flex items-center justify-between p-3 sm:p-4 bg-linear-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                            <div className="font-semibold text-emerald-900 text-base sm:text-lg wrap-break-word">
+                                                {formDossier.clientName}
+                                            </div>
                                             <div className={cn(
-                                                "text-xs px-2 py-0.5 rounded-full font-medium",
+                                                "text-xs px-2 py-0.5 rounded-full font-medium shrink-0",
                                                 formDossier.clientDossiersCount > 0 ? "bg-emerald-200 text-emerald-800" : "bg-gray-200 text-gray-600"
                                             )}>
                                                 <FolderOpen className="w-3 h-3 inline mr-1" />
@@ -328,12 +325,12 @@ export default function AddNewdossier() {
                                             </div>
                                         </div>
                                         {clients.find(c => String(c.id) === formDossier.clientId)?.email && (
-                                            <div className="text-sm text-emerald-700">
+                                            <div className="text-sm text-emerald-700 break-all">
                                                 📧 {clients.find(c => String(c.id) === formDossier.clientId)?.email}
                                             </div>
                                         )}
                                         {clients.find(c => String(c.id) === formDossier.clientId)?.phone && (
-                                            <div className="text-sm text-emerald-700">
+                                            <div className="text-sm text-emerald-700 break-all">
                                                 📱 {clients.find(c => String(c.id) === formDossier.clientId)?.phone}
                                             </div>
                                         )}
@@ -345,7 +342,7 @@ export default function AddNewdossier() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={clearSelectedClient}
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0 ml-2"
                                     >
                                         ✕
                                     </Button>
@@ -357,49 +354,59 @@ export default function AddNewdossier() {
                         {formDossier.clientId && (
                             <>
                                 <div className="border-t border-slate-200 my-4"></div>
-                                <div className="grid grid-cols-2 gap-3">
+                                
+                                {/* 2 colonnes sur desktop, 1 colonne sur mobile */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
                                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Dossier N *</label>
                                         <Input
                                             placeholder="EX: DOS-2026-001"
                                             value={formDossier.dossierName}
                                             onChange={e => setFormDossier(f => ({ ...f, dossierName: e.target.value }))}
-                                            className="rounded-xl"
+                                            className="rounded-xl text-sm sm:text-base"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Type de prestation</label>
                                         <Select value={formDossier.type} onValueChange={v => setFormDossier(f => ({ ...f, type: v }))}>
-                                            <SelectTrigger className="w-full rounded-xl"><SelectValue /></SelectTrigger>
-                                            <SelectContent>{TYPES_PRESTATION.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                                            <SelectTrigger className="w-full rounded-xl text-sm sm:text-base">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {TYPES_PRESTATION.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
+
+                                {/* Checkbox TVA */}
                                 <label className={cn("flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none transition-colors",
                                     tva ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-200 hover:border-slate-300")}>
-                                    <input type="checkbox" checked={tva as boolean} onChange={e => setTva(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
-                                    <div>
+                                    <input type="checkbox" checked={tva as boolean} onChange={e => setTva(e.target.checked)} className="w-4 h-4 rounded border-slate-300 shrink-0" />
+                                    <div className="min-w-0">
                                         <div className="text-sm font-semibold text-slate-800">TVA 18%</div>
                                         <div className="text-xs text-slate-400">TVA Afrique</div>
                                     </div>
-                                    {tva && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
+                                    {tva && <span className="ml-auto text-emerald-600 font-bold shrink-0">✓</span>}
                                 </label>
 
+                                {/* Description */}
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Description *</label>
                                     <Input
                                         placeholder="ex: Conteneur 40HC électroniques — Chine"
                                         value={formDossier.description}
                                         onChange={e => setFormDossier(f => ({ ...f, description: e.target.value }))}
-                                        className="rounded-xl"
+                                        className="rounded-xl text-sm sm:text-base"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                {/* Priorité et Date échéance */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
                                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Priorité</label>
                                         <Select value={formDossier.priorite} onValueChange={v => setFormDossier(f => ({ ...f, priorite: v }))}>
-                                            <SelectTrigger className="w-full rounded-xl">
+                                            <SelectTrigger className="w-full rounded-xl text-sm sm:text-base">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -419,7 +426,7 @@ export default function AddNewdossier() {
                                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Date échéance</label>
                                         <Popover open={openPop} onOpenChange={setOpenPop}>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline" className="w-full rounded-xl justify-start font-normal">
+                                                <Button variant="outline" className="w-full rounded-xl justify-start font-normal text-sm sm:text-base">
                                                     {date ? date.toISOString().split("T")[0] : "Sélectionner une date"}
                                                 </Button>
                                             </PopoverTrigger>
@@ -440,14 +447,15 @@ export default function AddNewdossier() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                {/* Port et B/L */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <div>
                                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Port / Aéroport</label>
                                         <Input
                                             placeholder="ex: Port Dakar"
                                             value={formDossier.port}
                                             onChange={e => setFormDossier(f => ({ ...f, port: e.target.value }))}
-                                            className="rounded-xl"
+                                            className="rounded-xl text-sm sm:text-base"
                                         />
                                     </div>
                                     <div>
@@ -456,37 +464,37 @@ export default function AddNewdossier() {
                                             placeholder="ex: BL-SH-2026-4521"
                                             value={formatBLNumber(formDossier.bl).formatted}
                                             onChange={e => setFormDossier(f => ({ ...f, bl: e.target.value }))}
-                                            className="rounded-xl"
+                                            className="rounded-xl text-sm sm:text-base"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Prestations */}
                                 <div>
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                                         <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lignes de prestation</label>
                                         <button
                                             onClick={() => setFormDossier(f => ({ ...f, prestations: [...f.prestations, { label: "", montant: "" }] }))}
-                                            className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-full font-medium transition-colors"
+                                            className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-full font-medium transition-colors shrink-0"
                                         >
                                             + Ajouter ligne
                                         </button>
                                     </div>
                                     <div className="space-y-2">
                                         {formDossier.prestations.map((p, i) => (
-                                            <div key={i} className="flex gap-2 items-center">
+                                            <div key={i} className="flex gap-2 items-center flex-col sm:flex-row">
                                                 <Input
                                                     placeholder="Libellé prestation"
                                                     value={p.label}
                                                     onChange={e => setFormDossier(f => ({ ...f, prestations: f.prestations.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))}
-                                                    className="rounded-xl flex-1 text-sm"
+                                                    className="rounded-xl flex-1 text-sm sm:text-base w-full"
                                                 />
                                                 <Input
                                                     type="number"
                                                     placeholder="Montant"
                                                     value={p.montant}
                                                     onChange={e => setFormDossier(f => ({ ...f, prestations: f.prestations.map((x, j) => j === i ? { ...x, montant: e.target.value } : x) }))}
-                                                    className="rounded-xl w-32 text-sm"
+                                                    className="rounded-xl w-full sm:w-32 text-sm sm:text-base"
                                                 />
                                                 {formDossier.prestations.length > 1 && (
                                                     <button
@@ -499,17 +507,19 @@ export default function AddNewdossier() {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="mt-3 p-3 bg-slate-50 rounded-lg text-right">
-                                        <div className="text-sm text-slate-600">
-                                            Total HT : <span className="font-bold text-slate-800 text-lg">
-                                                {fmt(formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0))}
-                                            </span>
-                                        </div>
-                                        {tva && (
-                                            <div className="text-xs text-slate-500 mt-1">
-                                                TVA (18%) : {fmt((formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0) * 0.18))}
+                                    <div className="mt-3 p-3 bg-slate-50 rounded-lg">
+                                        <div className="text-right">
+                                            <div className="text-sm text-slate-600">
+                                                Total HT : <span className="font-bold text-slate-800 text-base sm:text-lg">
+                                                    {fmt(formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0))}
+                                                </span>
                                             </div>
-                                        )}
+                                            {tva && (
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    TVA (18%) : {fmt((formDossier.prestations.reduce((s, p) => s + (parseInt(p.montant) || 0), 0) * 0.18))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </>
@@ -517,7 +527,7 @@ export default function AddNewdossier() {
                     </div>
                 </div>
 
-                <DialogFooter className="gap-3 p-4 bg-slate-50 rounded-b-lg">
+                <DialogFooter className="gap-3 p-4 bg-slate-50 rounded-b-lg flex-col sm:flex-row">
                     <DialogClose asChild>
                         <CancelBtn />
                     </DialogClose>
@@ -525,7 +535,7 @@ export default function AddNewdossier() {
                         type="submit"
                         onClick={ajouterDossier}
                         disabled={loading || !formDossier.clientId || !formDossier.description || formDossier.dossierName.trim() === "" || formDossier.prestations.some(p => (!p.label && p.montant) || (p.label && !p.montant)) || (!formDossier.bl)}
-                        className="bg-slate-500 hover:bg-slate-600 text-white font-bold"
+                        className="bg-slate-500 hover:bg-slate-600 text-white font-bold w-full sm:w-auto"
                     >
                         {loading ? <><Spinner /> Enregistrement...</> : <><Save className="w-4 h-4 mr-2" />Enregistrer</>}
                     </Button>

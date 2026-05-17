@@ -14,18 +14,9 @@ import { useFormState, useFormStatus } from "react-dom"
 import { useEffect, useState } from "react"
 import { Spinner } from "./ui/spinner"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
-import { AlertCircleIcon, EyeIcon, EyeOffIcon } from "lucide-react"
+import { AlertCircleIcon, EyeIcon, EyeOffIcon, Ship, Anchor } from "lucide-react"
 import { redirect } from "next/navigation"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group"
-
-// const login = async (e: React.FormEvent<HTMLFormElement>) => {
-//   e.preventDefault();
-//   const form = new FormData(e.currentTarget as HTMLFormElement);
-//   await handleSubmit(form)
-//   .catch((error) => {
-//     toast.error("Login failed. Please check your credentials and try again.");
-//   })
-// }
 
 export function LoginForm({
   className,
@@ -44,57 +35,86 @@ export function LoginForm({
   }, [state])
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props} action={formAction} >
+    <form className={cn("flex flex-col gap-6", className)} {...props} action={formAction}>
       <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Login to your account</h1>
-          <p className="text-muted-foreground text-sm text-balance">
-            <InstallButton />
+        <div className="flex flex-col items-center gap-2 text-center">
+          {/* Badge décoratif */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-2">
+            <Ship className="size-3 text-blue-400" />
+            <span className="text-xs text-blue-400 font-medium">Accès sécurisé transitaire</span>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-white">Connexion à votre espace</h1>
+          <p className="text-slate-400 text-sm text-balance">
+            Accédez à votre plateforme de gestion conteneurs
           </p>
-          {state?.error && (
-            <Alert variant="destructive" className="max-w-md">
-              <AlertCircleIcon />
-              <AlertTitle>Login failed</AlertTitle>
-              <AlertDescription>
-                {state?.message}
-              </AlertDescription>
-            </Alert>
-          )}
+          <InstallButton />
         </div>
+        
         <Field>
-          <FieldLabel htmlFor="email">Email or phone</FieldLabel>
-          <Input id="email" name="email" type="text" placeholder="m@example.com or 123-456-7890" autoComplete="email" required />
+          <FieldLabel htmlFor="email" className="text-slate-300 text-sm font-medium">
+            Email ou téléphone
+          </FieldLabel>
+          <Input 
+            id="email" 
+            name="email" 
+            type="text" 
+            placeholder="exemple@transitaire.com ou +33 6 12 34 56 78" 
+            autoComplete="email" 
+            required 
+            className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
+          />
         </Field>
+        
         <Field>
-          <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+          <div className="flex items-center mb-1">
+            <FieldLabel htmlFor="password" className="text-slate-300 text-sm font-medium">
+              Mot de passe
+            </FieldLabel>
             <a
               href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
+              className="ml-auto text-xs text-blue-400 hover:text-blue-300 transition-colors underline-offset-4 hover:underline"
             >
-              Forgot your password?
+              Mot de passe oublié ?
             </a>
           </div>
           <InputGroup>
             <InputGroupInput
               id="inline-end-input"
               type={show ? "text" : "password"}
-              placeholder="Enter password"
+              placeholder="Entrez votre mot de passe"
               name="password"
               required
+              className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
             />
             <InputGroupAddon
               align="inline-end"
-              className="cursor-pointer"
+              className="cursor-pointer bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white transition-colors"
               onClick={() => setShow(show => !show)}>
-              {show ? <EyeOffIcon /> : <EyeIcon />}
+              {show ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
             </InputGroupAddon>
           </InputGroup>
-          {/* <Input id="password" type={show ? "text" : "password"} name="password" required /> */}
         </Field>
-        <Field>
+        
+        <Field className="mt-2">
           <BtnLogin />
         </Field>
+        
+        {/* Informations supplémentaires */}
+        <div className="mt-4 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-center gap-4 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              <Ship className="size-3" /> FCL/LCL
+            </span>
+            <span className="text-slate-700">•</span>
+            <span className="flex items-center gap-1">
+              <Anchor className="size-3" /> Port to Port
+            </span>
+          </div>
+          <p className="text-center text-xs text-slate-500 mt-3">
+            Une assistance ? <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Contactez notre support 24/7</a>
+          </p>
+        </div>
       </FieldGroup>
     </form>
   )
@@ -104,8 +124,23 @@ const BtnLogin = () => {
   const { pending } = useFormStatus()
 
   return (
-    <Button type="submit" variant="outline" className="w-full cursor-pointer disabled:opacity-50" disabled={pending}>
-      {pending ? <Spinner /> : "Login"}
+    <Button 
+      type="submit" 
+      variant="outline" 
+      className="w-full cursor-pointer disabled:opacity-50 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-none shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+      disabled={pending}
+    >
+      {pending ? (
+        <span className="flex items-center gap-2">
+          <Spinner className="text-white" />
+          Connexion en cours...
+        </span>
+      ) : (
+        <span className="flex items-center gap-2">
+          Se connecter
+          <Ship className="size-4" />
+        </span>
+      )}
     </Button>
   )
 }

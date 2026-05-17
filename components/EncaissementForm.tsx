@@ -1,206 +1,20 @@
-import { startTransition, useEffect, useState, useTransition } from "react";
-import { ChequeDetails } from "./ChequeDetails";
-import { ClientSelect } from "./ClientSelect";
-import { DossierSelect } from "./DossierSelect";
+import { useState } from "react";
 import { PaymentMethodSelect } from "./PaymentMethodSelect";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./ui/select";
-import { VirementDetails } from "./VirementDetails";
-import { useRouter } from "next/navigation";
-import { cn, fmt, generatePayRef, getNextNumero, resteApayer, totalPaye } from "@/lib/utils";
-import { useDossiersStore } from "@/store/useDossiersStore";
+import { fmt, generatePayRef, resteApayer, totalPaye } from "@/lib/utils";
 import { Dossier } from "@/app/type";
 import { toast } from "sonner";
 import { useModalStore } from "@/store/modal/paiement";
 import { Spinner } from "./ui/spinner";
+import { useClientsStore } from "@/store/clientStore";
 
-// Composant pour le formulaire d'encaissement
-export const EncaissementForm = ({ onOpenChange, methodPayement, modeEncaissement, setModeEncaissement, setMethodPayement }: any) => {
-    const [clientId, setClientId] = useState("")
-    const [dossiersClient, setDossiersClient] = useState<Dossier[]>([])
-    const [isPending, startTransition] = useTransition()
-    const [montantTotal, setMontantTotal] = useState('')
-    const [montantRecu, setMontantRecu] = useState('')
-    const [dossierSelected, setDossierSelected] = useState('')
-    const [avecTVA, setAvecTVA] = useState(false) // État pour la TVA
-    const router = useRouter()
-    const dossiers = useDossiersStore(s => s.dossiers)
-
-    useEffect(() => {
-        if (clientId && clientId !== "OTHER") {
-            fetch("/api/dossiers", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ clientId })
-            })
-                .then(res => res.json())
-                .then(setDossiersClient)
-                .catch(console.error)
-        }
-    }, [clientId])
-
-    // Récupérer le dossier sélectionné
-    const dossierS = dossiersClient.length > 0
-        ? dossiersClient.find(d => d.id === dossierSelected) as Dossier
-        : null;
-
-    // Fonction pour calculer le montant TTC (HT + TVA 18%)
-    const calculerMontantTTC = (montantHT: number, tvaActive: boolean): number => {
-        if (!tvaActive) return montantHT;
-        return montantHT * 1.18; // +18% de TVA
-    };
-
-    // Calcul du montant total selon le mode
-    const getMontantTotal = () => {
-        if (modeEncaissement === "NOUVEAU") {
-            // Pour NOUVEAU : utiliser le montant HT saisi + TVA si applicable
-            const montantHT = Number(montantTotal) || 0;
-            return avecTVA ? montantHT * 1.18 : montantHT;
-        } else {
-            // Pour ACOMPTE : utiliser le montant_total du dossier sélectionné
-            return dossierS?.montant_total || 0;
-        }
-    };
-
-    // const montantTotalCalcule = getMontantTotal();
-
-    // Montant TTC calculé (uniquement pour mode NOUVEAU)
-    const montantTTC = modeEncaissement === "NOUVEAU"
-        ? calculerMontantTTC(Number(montantTotal) || 0, avecTVA)
-        : Number(montantTotal);
-
-    return (
-        <>
-            {/* {modeEncaissement === "ACOMPTE" && <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex justify-between">
-                <span className="text-rose-600 text-sm font-medium">Reste à percevoir</span>
-                <span className="text-rose-700 font-bold tabular-nums">{fmt(12000)}</span>
-            </div>} */}
-            <div className="grid grid-cols-1 gap-3">
-                <ClientSelect
-                    onValueChange={setClientId}
-                    isDecaissement={false}
-                    onAddClient={() => {
-                        onOpenChange(false)
-                        startTransition(() => router.push("/dashboard/clients/?r=new"))
-                    }}
-                />
-                {/* La TVA n'apparaît qu'en mode NOUVEAU */}
-                {modeEncaissement === "NOUVEAU" && (
-                    <label className={cn("flex items-center gap-3 rounded-xl border p-3 cursor-pointer select-none transition-colors",
-                        avecTVA ? "bg-emerald-50 border-emerald-300" : "bg-white border-slate-200 hover:border-slate-300")}>
-                        <input type="checkbox" checked={avecTVA} onChange={e => setAvecTVA(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
-                        <div>
-                            <div className="text-sm font-semibold text-slate-800">TVA 18%</div>
-                            <div className="text-xs text-slate-400">La TVA sera appliquée sur cette facture</div>
-                        </div>
-                        {avecTVA && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
-                    </label>
-                )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-
-                <div className="flex flex-col gap-3 w-full">
-                    <Label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Mode d'encaissement</Label>
-                    {dossiersClient.length === 0 ? (
-                        <Input name="mode" value="NOUVEAU" readOnly />
-                    ) : (
-                        <Select name="mode" onValueChange={setModeEncaissement} defaultValue={modeEncaissement}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Sélectionner le mode" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Mode d'encaissement</SelectLabel>
-                                    <SelectItem value="NOUVEAU">NOUVEAU</SelectItem>
-                                    <SelectItem value="ACOMPTE">ACOMPTE</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    )}
-                </div>
-
-                {modeEncaissement === "ACOMPTE" && <DossierSelect setDossier={setDossierSelected} dossiers={dossiersClient} />}
-
-                {modeEncaissement === "NOUVEAU" && (
-                    <div className="flex flex-col gap-3 w-full">
-                        <Label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Nom du dossier</Label>
-                        <Input name="dossier_name" defaultValue={getNextNumero(dossiers)} placeholder="Entrez le nom du dossier" />
-                    </div>
-                )}
-                {modeEncaissement === "NOUVEAU" && (
-                    <div className="grid gap-3">
-                        <Label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            Montant HT
-                            {avecTVA && <span className="text-green-600 ml-1">(hors TVA)</span>}
-                        </Label>
-                        <Input
-                            name="montant_total"
-                            type="number"
-                            placeholder="0"
-                            onChange={(e) => setMontantTotal(e.target.value)}
-                        />
-                        {/* Affichage du montant TTC si TVA activée */}
-                        {avecTVA && Number(montantTotal) > 0 && (
-                            <p className="text-xs text-green-600 mt-1">
-                                + TVA 18% : {fmt(Number(montantTotal) * 0.18)}<br />
-                                <span className="font-bold">Total TTC : {fmt(montantTTC)}</span>
-                            </p>
-                        )}
-                    </div>
-                )}
-                <div className="flex flex-col gap-3">
-                    <Label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Montant reçu</Label>
-                    <Input
-                        name="montant"
-                        type="number"
-                        // placeholder={`Max ${modeEncaissement === "NOUVEAU" ? fmt(avecTVA ? Number(montantTTC) : Number(montantTotal)) : (Number(montantTotalCalcule) - Number(totalPaye(dossierS as Dossier))).toLocaleString("fr-FR")}`} 
-                        onChange={(e) => setMontantRecu(e.target.value)} />
-                </div>
-                {modeEncaissement === "NOUVEAU" && <div className="flex flex-col gap-3">
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">B/L · LTA · AWB</label>
-                    <Input name="bl" placeholder="ex: BL-SH-2026-4521" />
-                </div>}
-
-                <div className="flex flex-col gap-3">
-                    <Label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Mode de paiement</Label>
-                    <PaymentMethodSelect onValueChange={setMethodPayement} />
-                </div>
-
-                {methodPayement === "CHEQUE" && <ChequeDetails />}
-                {methodPayement === "VIREMENT" && <VirementDetails />}
-            </div>
-
-            <div className="flex flex-col gap-3">
-                <Label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</Label>
-                <Input name="description" placeholder="ex: Conteneur 40HC électroniques — Chine" />
-            </div>
-
-
-            {/* Récap global - Utilisation du montant TTC pour NOUVEAU */}
-            {((modeEncaissement === "NOUVEAU" && Number(montantTotal) > 0) ||
-                (modeEncaissement === "ACOMPTE" && dossierS)) && (
-                    <RecapPaiement
-                        mode={modeEncaissement}
-                        montantTotal={modeEncaissement === "NOUVEAU" ? montantTTC : dossierS?.montant_total || 0}
-                        montantRecuActuel={Number(montantRecu)}
-                        dossier={dossierS}
-                        avecTVA={modeEncaissement === "NOUVEAU" ? avecTVA : false}
-                        montantHT={modeEncaissement === "NOUVEAU" ? Number(montantTotal) : 0}
-                    />
-                )}
-        </>
-    )
-}
 
 // Composant de récapitulatif
-const RecapPaiement = ({ mode, montantTotal, montantRecuActuel, dossier, avecTVA, montantHT }: {
+const RecapPaiement = ({ mode, montantRecuActuel, dossier }: {
     mode?: string;
-    montantTotal: number;
     montantRecuActuel: number;
     dossier: Dossier | null;
-    avecTVA?: boolean;
-    montantHT?: number;
 }) => {
     // Calculs selon le mode
     let totalDu = 0;
@@ -208,28 +22,19 @@ const RecapPaiement = ({ mode, montantTotal, montantRecuActuel, dossier, avecTVA
     let nouveauTotalPaye = 0;
     let resteAPayer = 0;
 
-    // if (mode === "NOUVEAU") {
-    //     // Pour un NOUVEAU dossier : montant TTC - montant reçu
-    //     totalDu = montantTotal;
-    //     totalDejaPaye = 0;
-    //     nouveauTotalPaye = montantRecuActuel;
-    //     resteAPayer = montantTotal - montantRecuActuel;
-    // } else {
-    //     // Pour un ACOMPTE : (montant_total du dossier - total versements existants) - nouveau montant reçu
-    //     totalDu = dossier?.montant_total || 0;
-    //     totalDejaPaye = totalPaye(dossier as Dossier);
-    //     nouveauTotalPaye = totalDejaPaye + montantRecuActuel;
-    //     resteAPayer = totalDu - nouveauTotalPaye;
-    // }
-
     totalDu = dossier?.montant_total || 0;
+    const tvaMontant = dossier?.tva ? (totalDu || 0) * 0.18 : 0;
+    totalDu += tvaMontant; // Ajouter la TVA au total dû si applicable
+
+
     totalDejaPaye = totalPaye(dossier as Dossier);
     nouveauTotalPaye = totalDejaPaye + montantRecuActuel;
     resteAPayer = totalDu - nouveauTotalPaye;
 
     const totalVersementsDepasse = nouveauTotalPaye > totalDu;
     const pourcentagePaye = totalDu > 0 ? (nouveauTotalPaye / totalDu) * 100 : 0;
-    const tvaMontant = (montantHT || 0) * 0.18;
+
+
 
     // Ne pas afficher si reste à payer est négatif ou si aucun montant valide
     if (totalDu === 0) return null;
@@ -240,12 +45,12 @@ const RecapPaiement = ({ mode, montantTotal, montantRecuActuel, dossier, avecTVA
                 📊 Récapitulatif financier - {mode === "NOUVEAU" ? "Nouveau dossier" : "Acompte"}
             </p>
 
-            {mode === "NOUVEAU" && avecTVA && montantHT && montantHT > 0 && (
+            {dossier?.tva && dossier?.montant_total && dossier?.montant_total > 0 && (
                 <>
                     {/* Ligne Montant HT */}
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500">Montant HT</span>
-                        <span>{fmt(montantHT)}</span>
+                        <span>{fmt(dossier.montant_total)}</span>
                     </div>
 
                     {/* Ligne TVA 18% */}
@@ -262,13 +67,13 @@ const RecapPaiement = ({ mode, montantTotal, montantRecuActuel, dossier, avecTVA
             {/* Ligne Total TTC / HT selon le cas */}
             <div className="flex justify-between text-sm">
                 <span className="text-slate-500">
-                    {mode === "NOUVEAU" && avecTVA ? "Total TTC" : "Total HT"}
+                    {dossier?.tva ? "Total TTC" : "Total HT"}
                 </span>
                 <span className="font-semibold">{fmt(totalDu)}</span>
             </div>
 
             {/* Si c'est un acompte, montrer les versements déjà effectués */}
-            {mode === "ACOMPTE" && totalDejaPaye > 0 && (
+            {totalDejaPaye > 0 && (
                 <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Déjà versé</span>
                     <span className="text-blue-600">{fmt(totalDejaPaye)}</span>
@@ -278,7 +83,7 @@ const RecapPaiement = ({ mode, montantTotal, montantRecuActuel, dossier, avecTVA
             {/* Montant reçu (actuel) */}
             <div className="flex justify-between text-sm">
                 <span className="text-slate-500">
-                    {mode === "NOUVEAU" ? "Montant reçu" : "Nouveau versement"}
+                    Nouveau versement
                 </span>
                 <span className="text-green-600 font-medium">{fmt(montantRecuActuel)}</span>
             </div>
@@ -326,75 +131,81 @@ const RecapPaiement = ({ mode, montantTotal, montantRecuActuel, dossier, avecTVA
 
 
 export const FormPaiment = () => {
-    // const { modesPaiement } = useConfigStore((state) => state.config)
+    // const setClients = useClientsStore((state) => state.setClients);
+    const addPaiementToDossier = useClientsStore((state) => state.addPaiementToDossier);
     const { isOpen, type, data, close } = useModalStore();
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [methodPayement, setMethodPayement] = useState('E')
-    const [formPaiement, setFormPaiement] = useState({
-        montant: "",
+    const [formPaiement, setFormPaiement] = useState<{
+        montant: string | null;
+        mode: string;
+        date: string;
+        ref: string;
+        note: string;
+    }>({
+        montant: null,
         mode: "Espèces",
         date: new Date().toISOString().split("T")[0],
         ref: generatePayRef(),
         note: "",
     });
+    
     if (!isOpen) return null;
 
     const d = data.d;
     const client = data.client;
     const reste = d ? resteApayer(d) : 0;
 
-
     const enregistrerPaiement = async () => {
         setLoading(true);
-        // Validation simple
-        const montant = parseFloat(formPaiement.montant);
+        const montant = parseFloat(formPaiement.montant as unknown as string);
+        
         if (isNaN(montant) || montant <= 0) {
             toast.error("Veuillez entrer un montant valide");
-            setLoading(false)
+            setLoading(false);
             return;
         }
         if (!formPaiement.mode) {
             toast.error("Veuillez sélectionner un mode de paiement");
-            setLoading(false)
+            setLoading(false);
             return;
         }
         if (montant > reste) {
             toast.error("Le montant dépasse le reste à payer");
-            setLoading(false)
+            setLoading(false);
             return;
         }
+        
         const dt = {
-                id: d.id,
-                clientId: d.clientId,
-                ...formPaiement,
-            }
-        // Appel API pour enregistrer le paiement
+            id: d.id,
+            clientId: d.clientId,
+            ...formPaiement,
+            montant: montant,
+        }
+        
         const res = await fetch("/api/dossiers/paiement", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(dt),
         })
+        
         if (res.ok) {
-            router.refresh(); // 🔥 refresh data (server components)
-            // setDossiers(prev => prev.map(ds =>
-            //     ds.id === d.id
-            //         ? { ...ds, versement: [...ds.versement, dt] }
-            //         : ds
-            // ));
-            toast.success("Paiement enregistré (simulé)");
+            // Utiliser la méthode ciblée du store au lieu de setClients
+            addPaiementToDossier(client.id, d.id, dt);
+            
+            toast.success("Paiement enregistré avec succès");
             setFormPaiement({
-                montant: "",
-                mode: "",
+                montant: null,
+                mode: "Espèces",
                 date: new Date().toISOString().split("T")[0],
                 ref: generatePayRef(),
                 note: "",
             });
             close();
         }
-
+        
         setLoading(false);
     }
+
 
     return (
         <div>
@@ -409,38 +220,25 @@ export const FormPaiment = () => {
             </div>
             <div className="p-6 space-y-4">
                 <RecapPaiement
-                    // mode={modeEncaissement}
-                    montantTotal={d?.montant_total || 0}
+                    mode={formPaiement.mode}
                     montantRecuActuel={Number(formPaiement.montant)}
                     dossier={d}
-                    avecTVA={d.avecTVA}
-                    montantHT={Number(d.montant_total)}
                 />
                 <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Montant reçu (FCFA) *</label>
                     <Input type="number" max={reste} placeholder={`Max: ${reste.toLocaleString("fr-FR")}`}
-                        value={formPaiement.montant} onChange={e => setFormPaiement(f => ({ ...f, montant: e.target.value }))}
+                        value={formPaiement.montant as unknown as string} onChange={e => setFormPaiement(f => ({ ...f, montant: e.target.value }))}
                         className="text-lg font-semibold" />
                     <div className="mt-2 text-right text-xs text-slate-400" >
                         <span className="font-bold text-slate-700">
-                            {fmt(formPaiement.montant)}
+                            {fmt(formPaiement.montant as unknown as string)}
                         </span>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                    {/* <div className="w-full">
-                        <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Mode de paiement</label>
-                        <Select
-                            value={formPaiement.mode} onValueChange={v => setFormPaiement(f => ({ ...f, mode: v }))}>
-                            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {modesPaiement.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div> */}
                     <div className="">
                         <Label className="block text-xs mb-1.5 font-semibold text-slate-500 uppercase tracking-wider">Mode de paiement</Label>
-                        <PaymentMethodSelect onValueChange={setMethodPayement} />
+                        <PaymentMethodSelect onValueChange={(value) => setFormPaiement((f) => ({ ...f, mode: value }))} />
                     </div>
                     <div>
                         <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Date</label>

@@ -122,10 +122,7 @@ export default async function ClientsPage() {
                     <AddBtn />
                 </div>
             </div>
-
-            {/* Section des statistiques avec Suspense pour le streaming */}
             <StatsHeader />
-
             {/* Composant principal de la table clients */}
             <div className="bg-white dark:bg-gray-950 rounded-xl border shadow-sm overflow-hidden">
                 <CardUser />

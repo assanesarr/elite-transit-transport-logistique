@@ -11,7 +11,6 @@ export default async function DashboardPage() {
   //   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   // }) as {type: string, montant: string, createdAt: string}[];
 
-  const cheques = await getCollection("suiviCheques")
 
   // const decaissement = mouvements.filter(m => m.type === 'decaissement' /* && new Date(m.createdAt).getFullYear() === new Date().getFullYear()*/);
   // const totalDebit = decaissement.reduce((acc, m) => acc + Number(m.montant), 0);
@@ -45,7 +44,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2 px-6 py-10">
-      <Dashboard cheques={cheques as Cheque[]} />
+      <Dashboard  />
     </div>
   )
 

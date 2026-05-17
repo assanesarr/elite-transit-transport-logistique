@@ -1,16 +1,13 @@
 "use client"
-import AddNewdossier from "@/components/addNewdossier"
-import { Button } from "@/components/ui/button"
+import { SpotlightSearch } from "@/components/spotlight-search"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useBreadcrumb } from "@/hooks/use-breadcrumb"
 import { useUIStore } from "@/store/booleanStore"
 import { useDossiersStore } from "@/store/useDossiersStore"
-import { IconCirclePlusFilled } from "@tabler/icons-react"
 import Link from "next/link"
 
 export function SiteHeader() {
-  const setIsOpenDos = useDossiersStore(s => s.setIsOpenDos)
   const breadcrumb = useBreadcrumb()
   const stats = useDossiersStore(s => s.stats);
   const isOpen = useUIStore((state) => state.isOpen);
@@ -43,20 +40,9 @@ export function SiteHeader() {
         })}
       </div>
       <div className="ml-auto flex w-full items-center justify-end gap-4 px-4 lg:px-6">
-        {/* <span className="hidden lg:inline">
-          {new Date().toLocaleDateString("fr-FR", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </span> */}
-        <Button 
-          onClick={() => setIsOpenDos(true)}
-          className="flex items-center gap-1.5 text-sm font-bold text-white bg-slate-700 hover:bg-slate-600 hover:text-slate-50  transition-colors" variant="outline" size="xs">
-          <IconCirclePlusFilled /> Nouveau dossier
-        </Button>
-    
+        <div className="flex items-center gap-4 mb-1.5">
+          <SpotlightSearch />
+        </div>
         <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
