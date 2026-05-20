@@ -342,10 +342,11 @@ export const isDossierSolde = (d: Dossier): boolean => {
     0
   );
 
-  const isSold = totalPaiements >= d.montant_total
-  // const isValidStatus = ["cloture", "nouveau", "annule"].includes(d.statut)
-
-  return isSold;
+  const isSold = totalPaiements >= d.montant_total;
+  const isAnnuleOuCloture = ["annule", "cloture"].includes(d.statut);
+  
+  // Un dossier est considéré comme soldé s'il est annulé/clôturé OU si les paiements couvrent le montant total
+  return isSold || isAnnuleOuCloture;
 };
 
 type BLResult = {

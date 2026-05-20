@@ -98,7 +98,7 @@ export type Dossier = {
     payement: string; //categorie 
     note?: string;
   }[];
-  statut: "nouveau" | "attente_doc" | "en_cours" | "cloture" | "solde"
+  statut: "nouveau" | "attente_doc" | "en_cours" | "cloture" | "solde" | "annule";
   createdAt: string;
   prestations: {
     label?: string;
