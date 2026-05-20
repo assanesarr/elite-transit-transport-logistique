@@ -1,22 +1,22 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { ArrowLeft, Printer, Trash2 } from "lucide-react";
-import { IconCircleCheckFilled, IconLoader, IconTrash } from "@tabler/icons-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
+import { IconCircleCheckFilled, IconLoader } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { cn, Commit, fmt, formatBLNumber, formatDate, getCatDecaiss, isDossierSolde, resteApayer, soldeDecaisse, tauxPaiement, totalDecaisse, totalPaye } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dossier } from "@/app/type";
 import { useClientsStore } from "@/store/clientStore";
 import { CATEGORIES_DECAISSEMENT, STATUTS_DOSSIER } from "@/app/data";
-import { AvatarCircle, PriorityBadge } from "../../components/helpers-components";
+import { AvatarCircle } from "../../components/helpers-components";
 import { useModalStore } from "@/store/modal/paiement";
 import { useModalDecaissementStore } from "@/store/modal/decaissement";
 import { useAlertStore } from "@/store/alertStore";
@@ -60,7 +60,7 @@ export default function FooterUser({ user }: { user: any }) {
             return (
                 (filtreStatut === "all" || d.statut === filtreStatut) &&
                 (filtrePrio === "all" || d.priorite === filtrePrio) &&
-                (!q || d.dossierName.toLowerCase().includes(q) || d.reference.toLowerCase().includes(q))
+                (!q || d.dossierName && d.dossierName.toLowerCase().includes(q) || d.reference && d.reference.toLowerCase().includes(q))
             );
         });
     }, [dossiers, filtreStatut, filtrePrio, recherche]);
@@ -302,7 +302,7 @@ function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: a
         const r = isDossierSolde(d)
         if (!r) return toast.error("Impossible de supprimer un dossier non clôturé ou annule. Veuillez d'abord le clôturé.")
 
-        const result = await openAlert({ message: `Supprimer lee Dossier "${d.dossierName}" ` })
+        const result = await openAlert({ message: `Supprimer le Dossier "${d.dossierName}" ` })
 
         if (!result) return
 

@@ -97,12 +97,12 @@ export async function saltAndHashPassword(): Promise<string> {
 // export const formatSNPhone = (value: string) => {
 //   // Sépare les numéros s'il y en a plusieurs (séparés par /, espace, virgule, etc.)
 //   const numbers = value.split(/[\s\/,]+/);
-  
+
 //   // Formate chaque numéro individuellement
 //   const formattedNumbers = numbers
 //     .map(number => formatSingleSNPhone(number))
 //     .filter(formatted => formatted !== "");
-  
+
 //   // Rejoint les numéros formatés avec " / "
 //   return formattedNumbers.join(" / ");
 // };
@@ -290,10 +290,10 @@ export const getNextNumero = (dossiers: any[]) => {
 
   const numeros = dossiers
     .map(d => {
-      if(!d.reference) return null
-      
+      if (!d.reference) return null
+
       const parts = d.reference.split("-");
-      
+
       // Vérifie structure valide
       if (parts.length !== 3) return null;
 
@@ -317,7 +317,7 @@ export const totalPaye = (dossier: Dossier): number => {
   if (!dossier.versement || dossier.versement.length === 0) {
     return 0;
   }
-  
+
   return dossier.versement.reduce((total, vers) => {
     return total + (vers.montant || 0);
   }, 0);
@@ -338,15 +338,24 @@ export const getCatDecaiss = (key: string) => CATEGORIES_DECAISSEMENT.find(c => 
 
 export const isDossierSolde = (d: Dossier): boolean => {
   const totalPaiements = d.versement.reduce(
-    (sum, p) => sum + p.montant,
+    (sum, p) => sum + Number(p.montant),
     0
   );
 
-  const isSold = totalPaiements >= d.montant_total;
-  const isAnnuleOuCloture = ["annule", "cloture"].includes(d.statut);
-  
-  // Un dossier est considéré comme soldé s'il est annulé/clôturé OU si les paiements couvrent le montant total
-  return isSold || isAnnuleOuCloture;
+  const totalDecaissements = d.payements.reduce(
+    (sum, p) => sum + Number(p.montant),
+    0
+  );
+
+  const isFinanciallySold = totalPaiements >= d.montant_total;
+  const isClosed = ["annule", "cloture"].includes(d.statut);
+  const isNewWithoutPayment = d.statut === "nouveau" && totalPaiements === 0 && totalDecaissements === 0;
+
+  // Un dossier est soldé si :
+  // 1. Il est annulé ou clôturé, OU
+  // 2. Il est nouveau sans aucun encaissement et sans décaissement, OU
+  // 3. Il est financièrement soldé
+  return isClosed || isNewWithoutPayment || isFinanciallySold;
 };
 
 type BLResult = {
