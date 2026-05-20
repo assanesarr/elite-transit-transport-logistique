@@ -214,8 +214,7 @@ export default function Dashboard() {
     const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
 
     function ouvrirDossier(dossier: Dossier) {
-        return
-        // route.push(`/dashboard/dossiers/${dossier.reference}`);
+        return route.push(`/dashboard/clients?client=${dossier.clientId}&dossier=${dossier.id}`);
     }
 
     const handleRefresh = async () => {
@@ -637,7 +636,7 @@ export default function Dashboard() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
-                                                    {d.reference || d.dossierName}
+                                                    {d.dossierName || d.reference}
                                                 </span>
                                                 {/* <PriorityBadge priorite={d.priorite} /> */}
                                                 {/* <StatutBadge statut={d.statut} /> */}
