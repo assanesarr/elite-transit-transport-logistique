@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { IconCircleCheckFilled, IconLoader } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { cn, Commit, fmt, formatBLNumber, formatDate, getCatDecaiss, isDossierSolde, resteApayer, soldeDecaisse, tauxPaiement, totalDecaisse, totalPaye } from "@/lib/utils";
+import { cn, Commit, fmt, fmtDT, formatBLNumber, formatDate, getCatDecaiss, isDossierSolde, resteApayer, soldeDecaisse, tauxPaiement, timeAgo, totalDecaisse, totalPaye } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dossier } from "@/app/type";
 import { useClientsStore } from "@/store/clientStore";
@@ -377,7 +377,7 @@ function GridDossier({ d, client, setDossiers, navigateTo }: { d: any, client: a
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div className="text-xs text-slate-400">📅 Éch. {d.dateEcheance}</div>
+                    <div className="text-xs text-slate-400">📅 {timeAgo(d.createdAt)}</div>
                     <button
                         onClick={(e) => { e.stopPropagation(); open("CREATE_PAYMENT", { d: d, client: client }); }}
                         disabled={reste <= 0}
@@ -639,6 +639,10 @@ function ViewDossier({ dossier }: { dossier: any }) {
                         <div className="text-left">
                             <p className="text-slate-400 text-xs">B/L · LTA · AWB</p>
                             <p className="text-white text-sm font-mono font-semibold">{formatBLNumber(d.bl as string).formatted}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-slate-400 text-xs">Date de création</p>
+                            <p className="text-white text-sm font-mono font-semibold">{fmtDT(new Date(d.createdAt))}</p>
                         </div>
                     </div>
 

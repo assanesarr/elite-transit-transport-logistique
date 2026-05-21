@@ -328,6 +328,29 @@ export const fmtM = (n: number) => (n >= 1000000 ? (n / 1000000).toFixed(2) + " 
 export const initials = (s: string) => s.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 export const today = new Date().toISOString().split("T")[0];
 export const fmtDT = (d: any) => d ? new Date(d).toLocaleString("fr-SN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+export function timeAgo(date: Date | string | number): string {
+  const now = new Date().getTime();
+  const past = new Date(date).getTime();
+
+  const diff = now - past;
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (seconds < 60) return `il y a ${seconds} seconde${seconds > 1 ? "s" : ""}`;
+  if (minutes < 60) return `il y a ${minutes} minute${minutes > 1 ? "s" : ""}`;
+  if (hours < 24) return `il y a ${hours} heure${hours > 1 ? "s" : ""}`;
+  if (days < 7) return `il y a ${days} jour${days > 1 ? "s" : ""}`;
+  if (weeks < 5) return `il y a ${weeks} semaine${weeks > 1 ? "s" : ""}`;
+  if (months < 12) return `il y a ${months} mois`;
+
+  return `il y a ${years} an${years > 1 ? "s" : ""}`;
+}
 
 // export const totalPaye = (d: Dossier) => d.versement.reduce((s, p) => s + p.montant, 0);
 export const resteApayer = (d: Dossier) => (d.tva ? d.montant_total * 1.18 : d.montant_total) - totalPaye(d);
@@ -355,7 +378,7 @@ export const isDossierSolde = (d: Dossier): boolean => {
   // 1. Il est annulé ou clôturé, OU
   // 2. Il est nouveau sans aucun encaissement et sans décaissement, OU
   // 3. Il est financièrement soldé
-  return isClosed || isNewWithoutPayment || isFinanciallySold;
+  return isClosed || isNewWithoutPayment //|| isFinanciallySold;
 };
 
 type BLResult = {

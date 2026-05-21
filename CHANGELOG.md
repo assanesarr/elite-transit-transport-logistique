@@ -67,3 +67,6 @@ fix(api) add payement type on saisie
 
 ## v0.1.16 - 2026-05-20
 
+
+## v0.1.17 - 2026-05-21
+
