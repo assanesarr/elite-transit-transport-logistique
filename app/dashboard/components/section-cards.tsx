@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { EyeOffIcon, EyeIcon, ReceiptEuro } from "lucide-react";
 import { useState } from "react";
 import { useFinanceStore } from "@/store/financeStore";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile copy";
 import { useUIStore } from "@/store/booleanStore";
 
 

@@ -124,7 +124,7 @@ export default function FooterUser({ user }: { user: any }) {
         setDossiers(user.dossiers || []);
     }, [user]);
 
-    const variants = {
+    const variants = useMemo(() => ({
         enter: (direction: number) => ({
             x: direction > 0 ? "100%" : "-100%",
             opacity: 0,
@@ -137,7 +137,7 @@ export default function FooterUser({ user }: { user: any }) {
             x: direction > 0 ? "-100%" : "100%",
             opacity: 0,
         }),
-    };
+    }), [])
 
     return (
         <Drawer

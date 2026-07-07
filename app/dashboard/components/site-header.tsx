@@ -45,9 +45,9 @@ export function SiteHeader() {
         </div>
         <Separator
           orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
+          className="hidden md:block mx-2 data-[orientation=vertical]:h-4"
         />
-        <span className="flex justify-center gap-1 font-semibold">
+        <span className="hidden md:flex justify-center gap-1 font-semibold ">
           Solde: {isOpen ? <span className={stats.soldeNet >= 0 ? "text-green-600" : "text-red-600"}>{
             new Intl.NumberFormat("fr-FR", {
               style: "currency",

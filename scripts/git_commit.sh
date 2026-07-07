@@ -331,7 +331,9 @@ echo -e "${CYAN}🚀 Push en cours...${RESET}"
 git push origin "$BRANCH" --follow-tags
 
 if git remote | grep -q "archive"; then
-    git push archive "$BRANCH" --follow-tags
+    # git push archive "$BRANCH" --follow-tags
+    echo -e "${CYAN}🚀 Push vers archive...${RESET}"
+    git push archive "$BRANCH"
 fi
 
 echo -e "${GREEN}✅ Push sur $BRANCH terminé !${RESET}"
